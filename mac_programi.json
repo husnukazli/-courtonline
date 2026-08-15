@@ -5,7 +5,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "SÜLEYMAN YİĞİT ÜYE",
         "Oyuncu 2": "KIVANC İSLEK",
-        "Durum": "Baslamadi"
+        "Durum": "Oynaniyor",
+        "Skor": "6-2 2-0"
     },
     {
         "Kort": "Kort 1",
@@ -13,7 +14,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "TEOMAN USLU",
         "Oyuncu 2": "CANER TUNCER",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 1",
@@ -21,7 +23,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "CAN ŞENYÜZ",
         "Oyuncu 2": "EMIR BATU GÖGEN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 1",
@@ -29,7 +32,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "ALİ MİRAN GÜR",
         "Oyuncu 2": "BARKIN AYBARS KAMAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 2",
@@ -37,7 +41,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "ULUÇ AKIN SARAN",
         "Oyuncu 2": "METIN EMIR ARSLAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 2",
@@ -45,7 +50,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "SUNJA CELAL AKKAYA",
         "Oyuncu 2": "MERT ALTAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 2",
@@ -53,7 +59,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "ONUR ALP",
         "Oyuncu 2": "ÖMER AKİF SERTBAŞ",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 2",
@@ -61,7 +68,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "GÖKTÜRK ARIN AKSOY",
         "Oyuncu 2": "ŞÜKRÜ YAĞIZ ÜYE",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 3",
@@ -69,7 +77,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "EMİRALP PAÇACI",
         "Oyuncu 2": "ARMIN EGE KINAY",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 3",
@@ -77,7 +86,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "DEFNE İPEK AKI",
         "Oyuncu 2": "ESRA ARSLAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 3",
@@ -85,7 +95,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "DERIN ÖZGER",
         "Oyuncu 2": "NAZ GÜNDÜZ",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 3",
@@ -93,7 +104,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "ÇİSİL OKTAYER",
         "Oyuncu 2": "BILGE KILIÇARSLAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 4",
@@ -101,7 +113,8 @@
         "Kategori": "Kadın 8 Yaş T",
         "Oyuncu 1": "LAL KOCA",
         "Oyuncu 2": "BILGE TÜRKMEN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 4",
@@ -109,7 +122,8 @@
         "Kategori": "Kadın 8 Yaş T",
         "Oyuncu 1": "ELIF ECE ÖNTÜRK",
         "Oyuncu 2": "AYŞE ÇAKIRÖZER",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 4",
@@ -117,7 +131,8 @@
         "Kategori": "Erkek 9 Yaş T",
         "Oyuncu 1": "TUĞTEKIN ÖZCAN",
         "Oyuncu 2": "AHMET KESIMAL",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 4",
@@ -125,7 +140,8 @@
         "Kategori": "Kadın 9 Yaş T",
         "Oyuncu 1": "AYŞE KESİMAL",
         "Oyuncu 2": "ADA ÇALIK",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 5",
@@ -133,7 +149,8 @@
         "Kategori": "Erkek 9 Yaş T",
         "Oyuncu 1": "BARIŞ EDİZ ÇİÇEKLİ",
         "Oyuncu 2": "RÜZGAR VEDAT ERSUN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 5",
@@ -141,7 +158,8 @@
         "Kategori": "Erkek 9 Yaş T",
         "Oyuncu 1": "NARTAN ÇINAR YÜCEL",
         "Oyuncu 2": "AYAZ AKYOL",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 5",
@@ -149,7 +167,8 @@
         "Kategori": "Erkek 9 Yaş T",
         "Oyuncu 1": "KENAN GÖĞEBAKAN",
         "Oyuncu 2": "ÇINAR SAĞLAM",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 5",
@@ -157,7 +176,8 @@
         "Kategori": "Kadın 9 Yaş T",
         "Oyuncu 1": "AZRA BADE KOCABAŞ",
         "Oyuncu 2": "İLAY MEMİŞ",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 6",
@@ -165,7 +185,8 @@
         "Kategori": "Erkek 8 Yaş T",
         "Oyuncu 1": "UZAY EĞILMEZ",
         "Oyuncu 2": "ÖMER ALP ALBAYRAK",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 6",
@@ -173,7 +194,8 @@
         "Kategori": "Erkek 9 Yaş T",
         "Oyuncu 1": "TUNA ŞENOL EREN",
         "Oyuncu 2": "EGE GENCER",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 6",
@@ -181,7 +203,8 @@
         "Kategori": "Kadın 9 Yaş T",
         "Oyuncu 1": "LINA DENIZ AKBABA",
         "Oyuncu 2": "NAZLI ECE ÇAVUŞDERE",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 6",
@@ -189,7 +212,8 @@
         "Kategori": "Kadın 9 Yaş T",
         "Oyuncu 1": "NİLSU ALTAN",
         "Oyuncu 2": "HATİCE AMİNE SINACI",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 1",
@@ -197,7 +221,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "BARTU ÖZMERZİFONLU",
         "Oyuncu 2": "ARAS TACAR",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 1",
@@ -205,7 +230,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "DURU IPEK KIR",
         "Oyuncu 2": "ZEYNEP GÜNBULUT",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 1",
@@ -213,7 +239,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "NAZ AHISKA",
         "Oyuncu 2": "AYNISA BOZKURT",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 1",
@@ -221,7 +248,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "PERA BOZÜYÜK",
         "Oyuncu 2": "ZEYNEP HIRA KARAKÜTÜK",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 1",
@@ -229,7 +257,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "UMAY ARCAĞ",
         "Oyuncu 2": "BERİL BOZAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 1",
@@ -237,7 +266,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "ECE AKBULUT",
         "Oyuncu 2": "ELA KAYA",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 2",
@@ -245,7 +275,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "MUSTAFA BARLAS ÇAKIR",
         "Oyuncu 2": "KUZEY ÖZTÜRK",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 2",
@@ -253,7 +284,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "DEVRIM ECE ŞENTÜRK",
         "Oyuncu 2": "YAĞMUR LINA BULUT",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 2",
@@ -261,7 +293,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "NEFES ELİAÇIK",
         "Oyuncu 2": "ELİF ELA ORAL",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 2",
@@ -269,7 +302,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "BERAT ALP ERTÜRK",
         "Oyuncu 2": "AREN KAVAKLIOGLU",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 2",
@@ -277,7 +311,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "ELIS AKÇAYÖZ",
         "Oyuncu 2": "NIL DAMLA BUHUR",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 2",
@@ -285,7 +320,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "BESTE KIREMITÇI",
         "Oyuncu 2": "GÜNEŞ ÖZALP",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 3",
@@ -293,7 +329,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "YAMAÇ EGE URAZ",
         "Oyuncu 2": "ÖZGÜR ÇALIŞKAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 3",
@@ -301,7 +338,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "YUSUF EMİR ÖZDEMİR",
         "Oyuncu 2": "ÖMER BARAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 3",
@@ -309,7 +347,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "OĞUZ ALP AYDEMIR",
         "Oyuncu 2": "BATUHAN ATAOĞLU",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 3",
@@ -317,7 +356,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "DENIZ ALPTEKIN",
         "Oyuncu 2": "NEHIR TEZCAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 3",
@@ -325,7 +365,8 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "ZEYNEP ELA TÜRKAY",
         "Oyuncu 2": "ELIF SENA ÇELIK",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 3",
@@ -333,7 +374,8 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "KUZEY GÜVEN",
         "Oyuncu 2": "BARAN YÜCEL",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 4",
@@ -341,7 +383,8 @@
         "Kategori": "Kadın 9 Yaş T",
         "Oyuncu 1": "ALIN ADA GÜREL",
         "Oyuncu 2": "DOĞA KAMIŞLI",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 4",
@@ -349,7 +392,8 @@
         "Kategori": "Erkek 8 Yaş T",
         "Oyuncu 1": "YUSUF MIRZA PELIT",
         "Oyuncu 2": "ESAT BARTU YILDIZ",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 4",
@@ -357,7 +401,8 @@
         "Kategori": "Erkek 8 Yaş T",
         "Oyuncu 1": "KEREM TAMA",
         "Oyuncu 2": "UZAY YILDIRAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 4",
@@ -365,7 +410,8 @@
         "Kategori": "Kadın 8 Yaş T",
         "Oyuncu 1": "SERRA DERİN",
         "Oyuncu 2": "ELA AYARTMAZ",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 5",
@@ -373,7 +419,8 @@
         "Kategori": "Kadın 9 Yaş T",
         "Oyuncu 1": "AYŞE IRMAK ÇETİN",
         "Oyuncu 2": "ASYA EYNEHAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 5",
@@ -381,7 +428,8 @@
         "Kategori": "Kadın 9 Yaş T",
         "Oyuncu 1": "FADIME CEMRE ÇIFTCI",
         "Oyuncu 2": "ALIN ZEYNEP INCETAŞ",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 5",
@@ -389,7 +437,8 @@
         "Kategori": "Erkek 8 Yaş T",
         "Oyuncu 1": "ALI KART",
         "Oyuncu 2": "ALI ÖNDER KARAOĞLAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 5",
@@ -397,7 +446,8 @@
         "Kategori": "Kadın 8 Yaş T",
         "Oyuncu 1": "BAHAR AŞKAR",
         "Oyuncu 2": "İPEK FERAY DEVECI",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 6",
@@ -405,7 +455,8 @@
         "Kategori": "Kadın 9 Yaş T",
         "Oyuncu 1": "NEHIR TURKMEN",
         "Oyuncu 2": "ALYA NIL DOĞAN",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 6",
@@ -413,7 +464,8 @@
         "Kategori": "Erkek 8 Yaş T",
         "Oyuncu 1": "ERDEM ATA DEVRIM",
         "Oyuncu 2": "HAMZA YAMAN ÜYE",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 6",
@@ -421,7 +473,8 @@
         "Kategori": "Erkek 9 Yaş T",
         "Oyuncu 1": "ARDA KAYGUSUZ",
         "Oyuncu 2": "ASLAN BULDUK",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 6",
@@ -429,7 +482,8 @@
         "Kategori": "Erkek 9 Yaş T",
         "Oyuncu 1": "MESUT KEREM ULUSU",
         "Oyuncu 2": "PARS FILIK",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     },
     {
         "Kort": "Kort 1",
@@ -437,6 +491,7 @@
         "Kategori": "Kadın 10 Yaş T",
         "Oyuncu 1": "NEHIR GÖKALP",
         "Oyuncu 2": "DERİN BOZALIOĞLU",
-        "Durum": "Baslamadi"
+        "Durum": "Baslamadi",
+        "Skor": NaN
     }
 ]
