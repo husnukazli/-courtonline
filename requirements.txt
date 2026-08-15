@@ -1,6 +1,4 @@
-graphviz
-fpdf2
-openpyxl
-pandas
 streamlit
-supabase
+requests
+pdfplumber
+pandas
