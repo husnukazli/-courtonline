@@ -7,6 +7,22 @@ from datetime import datetime
 
 st.set_page_config(page_title="Kort Hakemi", layout="centered")
 
+# Sayı giriş kutularını ve butonlarını mobil uyumlu/büyük yapacak CSS enjeksiyonu
+st.markdown("""
+<style>
+div[data-baseweb="input"] input {
+    height: 48px !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    text-align: center !important;
+}
+button[data-baseweb="button"] {
+    height: 38px !important;
+    width: 38px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("Kort Hakemi Paneli")
 
 def githubdan_veri_getir(dosya_yolu):
@@ -106,20 +122,35 @@ else:
         yeni_durum = st.selectbox("Mac Durumu", ["Baslamadi", "Oynaniyor", "Bitti"], index=["Baslamadi", "Oynaniyor", "Bitti"].index(mevcut_durum))
         
         st.markdown("---")
-        st.markdown("**Set Skorlari**")
         mevcut_skorlar = skor_cozumle(secilen_mac.get("Skor", "-"))
         
-        # Etiketler artık genel O1/O2 yerine doğrudan oyuncuların isimleri ile geliyor
-        col1, col2, col3 = st.columns(3)
+        # 1. SET
+        st.markdown("#### 1. Set")
+        col1, col2 = st.columns(2)
         with col1:
-            s1_p1 = st.number_input(f"{p1_isim} (S1)", 0, 7, mevcut_skorlar["s1_p1"])
-            s1_p2 = st.number_input(f"{p2_isim} (S1)", 0, 7, mevcut_skorlar["s1_p2"])
+            s1_p1 = st.number_input(f"{p1_isim}", 0, 7, mevcut_skorlar["s1_p1"], key="s1_p1_k")
         with col2:
-            s2_p1 = st.number_input(f"{p1_isim} (S2)", 0, 7, mevcut_skorlar["s2_p1"])
-            s2_p2 = st.number_input(f"{p2_isim} (S2)", 0, 7, mevcut_skorlar["s2_p2"])
+            s1_p2 = st.number_input(f"{p2_isim}", 0, 7, mevcut_skorlar["s1_p2"], key="s1_p2_k")
+            
+        st.divider()
+        
+        # 2. SET
+        st.markdown("#### 2. Set")
+        col3, col4 = st.columns(2)
         with col3:
-            s3_p1 = st.number_input(f"{p1_isim} (S3)", 0, 7, mevcut_skorlar["s3_p1"])
-            s3_p2 = st.number_input(f"{p2_isim} (S3)", 0, 7, mevcut_skorlar["s3_p2"])
+            s2_p1 = st.number_input(f"{p1_isim}", 0, 7, mevcut_skorlar["s2_p1"], key="s2_p1_k")
+        with col4:
+            s2_p2 = st.number_input(f"{p2_isim}", 0, 7, mevcut_skorlar["s2_p2"], key="s2_p2_k")
+            
+        st.divider()
+        
+        # 3. SET
+        st.markdown("#### 3. Set (Tie-break / Final)")
+        col5, col6 = st.columns(2)
+        with col5:
+            s3_p1 = st.number_input(f"{p1_isim}", 0, 7, mevcut_skorlar["s3_p1"], key="s3_p1_k")
+        with col6:
+            s3_p2 = st.number_input(f"{p2_isim}", 0, 7, mevcut_skorlar["s3_p2"], key="s3_p2_k")
             
         with st.expander("Ek Detaylar (Saat, Kura Tercihi ve Saha Tarafı)"):
             m_bas = secilen_mac.get("Baslangic_Saati", "Secilmedi")
