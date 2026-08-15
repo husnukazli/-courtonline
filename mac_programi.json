@@ -109,11 +109,11 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "EMİRALP PAÇACI",
         "Oyuncu 2": "ARMIN EGE KINAY",
-        "Durum": "Baslamadi",
-        "Skor": NaN,
+        "Durum": "Oynaniyor",
+        "Skor": "2/1 0/0",
         "Baslangic_Saati": NaN,
         "Bitis_Saati": NaN,
-        "Kura_Kazanan": NaN,
+        "Kura_Kazanan": "EMİRALP PAÇACI",
         "Kura_Tercih": NaN
     },
     {
