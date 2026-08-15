@@ -89,6 +89,30 @@ def ayarlari_ayikla(df):
                 })
     return pd.DataFrame(mac_listesi)
 
+# Skor stringinden kazananı tespit eden fonksiyon (1 veya 2 döner)
+def kazanan_kim(skor_str):
+    if not skor_str or skor_str == "-":
+        return None
+    p1_sets = 0
+    p2_sets = 0
+    try:
+        for s in skor_str.split():
+            parts = s.split("/")
+            if len(parts) == 2:
+                g1 = int(parts[0])
+                g2 = int(parts[1])
+                if g1 > g2:
+                    p1_sets += 1
+                elif g2 > g1:
+                    p2_sets += 1
+    except:
+        pass
+    if p1_sets > p2_sets:
+        return 1
+    elif p2_sets > p1_sets:
+        return 2
+    return None
+
 if "bashakem_giris" not in st.session_state:
     st.session_state.bashakem_giris = False
 
@@ -203,6 +227,24 @@ else:
                                 k_tercih = mac.get("Kura_Tercih", "-")
                                 s_tarafi = mac.get("Saha_Tarafi", "-")
                                 
+                                # Kazanan tespiti ve görsel stil ayarları
+                                kazanan = kazanan_kim(skor) if durum == "Bitti" else None
+                                if kazanan == 1:
+                                    p1_style = "color: #ffffff; font-weight: bold;"
+                                    p2_style = "color: #666666;"
+                                    p1_isim = f"✓ {mac['Oyuncu 1']}"
+                                    p2_isim = mac['Oyuncu 2']
+                                elif kazanan == 2:
+                                    p1_style = "color: #666666;"
+                                    p2_style = "color: #ffffff; font-weight: bold;"
+                                    p1_isim = mac['Oyuncu 1']
+                                    p2_isim = f"✓ {mac['Oyuncu 2']}"
+                                else:
+                                    p1_style = "color: #e0e0e0;"
+                                    p2_style = "color: #e0e0e0;"
+                                    p1_isim = mac['Oyuncu 1']
+                                    p2_isim = mac['Oyuncu 2']
+
                                 if durum == "Oynaniyor":
                                     durum_str = "DEVAM"
                                     durum_style = "color: #00FF66; font-weight: bold;"
@@ -224,8 +266,8 @@ else:
                                             <span style="{durum_style}">{durum_str}</span>
                                         </div>
                                         <div style="color: #999; font-size: 9px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{mac['Kategori']}</div>
-                                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px;">{mac['Oyuncu 1']}</div>
-                                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px;">{mac['Oyuncu 2']}</div>
+                                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; {p1_style}">{p1_isim}</div>
+                                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; {p2_style}">{p2_isim}</div>
                                         <div style="margin-top: 4px; border-top: 1px dashed #333; padding-top: 3px; text-align: center;">
                                             <span style="{skor_style}">Skor: {skor}</span>
                                         </div>
@@ -261,7 +303,6 @@ else:
             baslamayan = len(df_stat[df_stat["Durum"] == "Baslamadi"])
             oran = int((biten_mac / toplam_mac * 100)) if toplam_mac > 0 else 0
             
-            # Ortalama süre hesaplama (Kalıcı arşiv + aktif programdaki geçerli saatli biten maçlar dahil)
             sureler = []
             istatistikler = githubdan_veri_getir("turnuva_istatistikleri.json")
             if isinstance(istatistikler, dict) and "sureler" in istatistikler:
