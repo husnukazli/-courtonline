@@ -5,11 +5,10 @@ import requests
 import base64
 import json
 
-st.set_page_config(page_title="Baş Hakem", page_icon="👑", layout="wide")
+st.set_page_config(page_title="Baş Hakem Paneli", page_icon="👑", layout="wide")
 
-st.title("👑 Başhakem Kontrol Paneli")
+st.title("👑 Başhakem Kort Akış Paneli")
 
-# --- YENİ EKLENEN: GITHUB'DAN VERİ OKUMA FONKSİYONU ---
 def githubdan_veri_getir(dosya_yolu="mac_programi.json"):
     """GitHub'daki güncel maç programını çeker."""
     try:
@@ -94,79 +93,103 @@ def ayarlari_ayikla(df):
                     oyuncu_2 = "Bilinmiyor"
 
                 mac_listesi.append({
-                    "Kort": kort,
+                    "Kort": kort.strip(),
                     "Saat": saat,
                     "Kategori": kategori,
                     "Oyuncu 1": oyuncu_1,
                     "Oyuncu 2": oyuncu_2,
-                    "Durum": "Baslamadi" 
+                    "Durum": "Baslamadi" # Bekliyor (Gri) / Oynaniyor (Yesil) / Bitti (Kirmizi)
                 })
                 
     return pd.DataFrame(mac_listesi)
 
-# --- ARAYÜZ ---
-
-# 1. Aşama: Sayfa açıldığında kayıtlı veriyi kontrol et
+# --- ANA AKIŞ ---
 mevcut_program = githubdan_veri_getir()
 
 if mevcut_program:
-    st.info("Sistemde aktif bir maç programı çalışıyor.")
-    st.subheader("🎾 Güncel Maç Programı")
-    df_mevcut = pd.DataFrame(mevcut_program)
-    df_mevcut.index = df_mevcut.index + 1
-    st.dataframe(df_mevcut, use_container_width=True)
+    st.success("🟢 Aktif Maç Programı Yüklendi. Kort Akışı Aşağıdadır:")
+    
+    df_maclar = pd.DataFrame(mevcut_program)
+    
+    # 6 Kort için yan yana 6 sütun oluşturuyoruz
+    kortlar = [f"Kort {i}" for i in range(1, 7)]
+    sutunlar = st.columns(6)
+    
+    for idx, kort_adi in enumerate(kortlar):
+        with sutunlar[idx]:
+            st.markdown(f"### 🏟️ {kort_adi}")
+            st.divider()
+            
+            # Bu korta ait maçları filtrele
+            kort_maclari = df_maclar[df_maclar["Kort"] == kort_adi]
+            
+            if kort_maclari.empty:
+                st.caption("Maç yok")
+            else:
+                for _, mac in kort_maclari.iterrows():
+                    # Maç durumuna göre görsel renk ikonları
+                    durum = mac.get("Durum", "Baslamadi")
+                    ikon = "⚪"
+                    if durum == "Oynaniyor":
+                        ikon = "🟢"
+                    elif durum == "Bitti":
+                        ikon = "🔴"
+                        
+                    # Kompakt Maç Kutusu
+                    with st.container(border=True):
+                        st.markdown(f"**{mac['Saat']}** {ikon}")
+                        st.caption(f"{mac['Kategori']}")
+                        st.write(f"👤 {mac['Oyuncu 1']}")
+                        st.write(f"👤 {mac['Oyuncu 2']}")
+                        
     st.divider()
-    st.write("**Yeni bir program (PDF) yüklemek veya mevcut programı ezmek isterseniz aşağıdaki alanı kullanabilirsiniz:**")
+    with st.expander("🛠️ Yeni PDF Yükle ve Programı Güncelle"):
+        yuklenen_pdf = st.file_uploader("Maç Programı (PDF) Yükle", type="pdf")
+        if yuklenen_pdf:
+            # (PDF İşleme ve Kaydetme Mantığı)
+            with st.spinner("PDF işleniyor..."):
+                tum_temiz_veriler = pd.DataFrame()
+                with pdfplumber.open(yuklenen_pdf) as pdf:
+                    for sayfa in pdf.pages:
+                        tablo = sayfa.extract_table()
+                        if tablo:
+                            df_ham = pd.DataFrame(tablo[1:], columns=tablo[0])
+                            if None in df_ham.columns:
+                                df_ham = df_ham.dropna(axis=1, how='all')
+                                df_ham.columns = [f"Kort {i+1}" for i in range(len(df_ham.columns))]
+                            df_temiz = ayarlari_ayikla(df_ham)
+                            if not df_temiz.empty:
+                                tum_temiz_veriler = pd.concat([tum_temiz_veriler, df_temiz], ignore_index=True)
+                
+                if not tum_temiz_veriler.empty:
+                    st.dataframe(tum_temiz_veriler, use_container_width=True)
+                    if st.button("Onayla ve GitHub'a Kaydet", type="primary"):
+                        basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"))
+                        if basarili:
+                            st.success("Güncellendi! Sayfayı yenileyebilirsiniz.")
+                        else:
+                            st.error(mesaj)
 else:
-    st.warning("Sistemde henüz kayıtlı bir maç programı yok. Lütfen PDF yükleyin.")
-
-# 2. Aşama: PDF Yükleme Alanı
-yuklenen_pdf = st.file_uploader("Maç Programı (PDF) Yükle", type="pdf")
-
-if yuklenen_pdf:
-    with st.spinner("PDF ayrıştırılıyor... Lütfen bekleyin."):
-        try:
+    st.warning("Sistemde kayıtlı maç programı bulunamadı. Lütfen aşağıdan PDF yükleyin.")
+    yuklenen_pdf = st.file_uploader("Maç Programı (PDF) Yükle", type="pdf")
+    if yuklenen_pdf:
+        # Aynı PDF yükleme akışı
+        with st.spinner("İlk yükleme yapılıyor..."):
             tum_temiz_veriler = pd.DataFrame()
-            toplam_mac_sayisi = 0
-
             with pdfplumber.open(yuklenen_pdf) as pdf:
-                for sayfa_no, sayfa in enumerate(pdf.pages):
+                for sayfa in pdf.pages:
                     tablo = sayfa.extract_table()
-                    
                     if tablo:
                         df_ham = pd.DataFrame(tablo[1:], columns=tablo[0])
-                        
                         if None in df_ham.columns:
-                             df_ham = df_ham.dropna(axis=1, how='all')
-                             yeni_sutunlar = [f"Kort {i+1}" for i in range(len(df_ham.columns))]
-                             df_ham.columns = yeni_sutunlar
-
+                            df_ham = df_ham.dropna(axis=1, how='all')
+                            df_ham.columns = [f"Kort {i+1}" for i in range(len(df_ham.columns))]
                         df_temiz = ayarlari_ayikla(df_ham)
-                        
                         if not df_temiz.empty:
                             tum_temiz_veriler = pd.concat([tum_temiz_veriler, df_temiz], ignore_index=True)
-                            toplam_mac_sayisi += len(df_temiz)
-            
             if not tum_temiz_veriler.empty:
-                st.success(f"PDF ayrıştırıldı! Toplam {toplam_mac_sayisi} maç bulundu.")
-                st.subheader("📋 Yeni Yüklenen Maç Listesi Önizlemesi")
-                tum_temiz_veriler.index = tum_temiz_veriler.index + 1
                 st.dataframe(tum_temiz_veriler, use_container_width=True)
-                
-                st.subheader("⚙️ Programı Yayınla")
-                
-                if st.button("✅ Programı Onayla ve GitHub'a Kaydet", type="primary"):
-                    with st.spinner("GitHub'a kaydediliyor..."):
-                        kayit_verisi = tum_temiz_veriler.to_dict(orient="records")
-                        basarili_mi, mesaj = github_a_kaydet(kayit_verisi)
-                        
-                        if basarili_mi:
-                            st.success("Maç programı başarıyla güncellendi! Sayfayı yenilediğinizde aktif program olarak görünecektir.")
-                        else:
-                            st.error(f"Kayıt işlemi başarısız oldu: {mesaj}")
-                            
-            else:
-                st.error("PDF içinde tablo bulunamadı veya veriler çıkartılamadı.")
-                
-        except Exception as e:
-            st.error(f"Okuma hatası: {e}")
+                if st.button("Programı Kaydet", type="primary"):
+                    basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"))
+                    if basarili:
+                        st.success("Kayıt başarılı! Sayfayı yenileyin.")
