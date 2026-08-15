@@ -158,17 +158,22 @@ else:
             .stApp {{
                 zoom: {zoom_seviyesi}%;
             }}
-            /* Mobilde kolonların alt alta yığılmasını engelle, yatay kaydırma (scroll) ver */
+            /* Kortların blok halinde sola/sağa yumuşakça kayması için kapsayıcı ayarı */
             @media (max-width: 768px) {{
                 [data-testid="stHorizontalBlock"] {{
+                    display: flex !important;
                     flex-direction: row !important;
                     flex-wrap: nowrap !important;
                     overflow-x: auto !important;
-                    padding-bottom: 10px;
+                    width: 100% !important;
+                    gap: 12px !important;
+                    padding-bottom: 12px !important;
+                    -webkit-overflow-scrolling: touch;
                 }}
                 [data-testid="column"] {{
+                    flex: 0 0 170px !important;
+                    max-width: 170px !important;
                     min-width: 170px !important;
-                    flex: 1 0 auto !important;
                 }}
             }}
             .tooltip-container {{
