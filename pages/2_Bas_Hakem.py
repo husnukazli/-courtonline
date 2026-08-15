@@ -80,11 +80,15 @@ def ayarlari_ayikla(df):
                     "Oyuncu 1": oyuncu_1,
                     "Oyuncu 2": oyuncu_2,
                     "Durum": "Baslamadi",
-                    "Skor": "-"
+                    "Skor": "-",
+                    "Baslangic_Saati": "",
+                    "Bitis_Saati": "",
+                    "Kura_Kazanan": "",
+                    "Kura_Tercih": ""
                 })
     return pd.DataFrame(mac_listesi)
 
-# --- ZOOM KONTROLÜ ---
+# Zoom Kontrolü
 col_zoom1, _, _ = st.columns([2, 6, 4])
 with col_zoom1:
     zoom_seviyesi = st.slider("Gorunum Olcegi (%)", min_value=50, max_value=120, value=100, step=10)
@@ -99,16 +103,13 @@ st.markdown(f"""
 
 st.divider()
 
-# --- HAKEM YÖNETİMİ PANELİ (EXPANDER) ---
+# Hakem Yönetimi Paneli
 with st.expander("Hakem Yonetimi (Hakem Ekle / Listele)"):
-    st.write("Turnuvada gorev alacak hakemleri buradan tanimlayabilirsiniz.")
-    
-    # Mevcut hakemleri çek
     kayitli_hakemler = githubdan_veri_getir("hakemler.json")
     if not isinstance(kayitli_hakemler, dict):
         kayitli_hakemler = {}
         
-    yeni_kullanici = st.text_input("Hakem Kullanici Adi")
+    yeni_kullanici = st.text_input("Hakem Kullanici Adi / Ismi")
     yeni_sifre = st.text_input("Hakem Sifresi", type="password")
     
     if st.button("Hakem Ekle / Guncelle"):
@@ -129,7 +130,7 @@ with st.expander("Hakem Yonetimi (Hakem Ekle / Listele)"):
 
 st.divider()
 
-# --- ANA MAÇ AKIŞI ---
+# Ana Maç Akışı ve Renk Kodlu Izgara
 mevcut_program = githubdan_veri_getir("mac_programi.json")
 
 if mevcut_program:
@@ -152,14 +153,19 @@ if mevcut_program:
                         durum = mac.get("Durum", "Baslamadi")
                         skor = mac.get("Skor", "-")
                         
-                        durum_isareti = "[Bekliyor]"
+                        # Renkli durum etiketleri
                         if durum == "Oynaniyor":
-                            durum_isareti = "[DEVAM EDİYOR]"
+                            durum_etiketi = "DEVAM EDIYOR"
+                            renk_style = "color: green; font-weight: bold;"
                         elif durum == "Bitti":
-                            durum_isareti = "[BITTI]"
+                            durum_etiketi = "BITTI"
+                            renk_style = "color: red; font-weight: bold;"
+                        else:
+                            durum_etiketi = "Bekliyor"
+                            renk_style = "color: gray;"
                             
                         with st.container(border=True):
-                            st.text(f"{mac['Saat']} {durum_isareti}")
+                            st.markdown(f"<span style='{renk_style}'>[{durum_etiketi}]</span> Saat: {mac['Saat']}", unsafe_allow_html=True)
                             st.caption(f"{mac['Kategori']}")
                             st.write(f"{mac['Oyuncu 1']}")
                             st.write("vs")
