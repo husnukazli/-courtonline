@@ -8,16 +8,15 @@ import json
 st.set_page_config(page_title="Baş Hakem", page_icon="👑", layout="wide")
 
 st.title("👑 Başhakem Kontrol Paneli")
-st.write("Burada PDF yükleme ekranı ve tüm kortların anlık durumu görünecek.")
 
-def github_a_kaydet(veri_listesi, dosya_yolu="mac_programi.json"):
-    """Veriyi GitHub reposuna JSON olarak kaydeder."""
+# --- YENİ EKLENEN: GITHUB'DAN VERİ OKUMA FONKSİYONU ---
+def githubdan_veri_getir(dosya_yolu="mac_programi.json"):
+    """GitHub'daki güncel maç programını çeker."""
     try:
-        # BÜYÜK HARFLİ DEĞİŞİKLİKLERİ BURAYA EKLEDİK
         token = st.secrets["GITHUB_TOKEN"]
         repo = st.secrets["REPO_NAME"]
     except KeyError:
-        return False, "Hata: Streamlit Secrets (veya secrets.toml) içinde GITHUB_TOKEN veya REPO_NAME bulunamadı!"
+        return None
 
     url = f"https://api.github.com/repos/{repo}/contents/{dosya_yolu}"
     headers = {
@@ -25,7 +24,28 @@ def github_a_kaydet(veri_listesi, dosya_yolu="mac_programi.json"):
         "Accept": "application/vnd.github.v3+json"
     }
     
-    # Dosya zaten var mı diye kontrol edip SHA kodunu alıyoruz
+    cevap = requests.get(url, headers=headers)
+    if cevap.status_code == 200:
+        icerik_b64 = cevap.json().get("content", "")
+        if icerik_b64:
+            icerik_json = base64.b64decode(icerik_b64).decode('utf-8')
+            return json.loads(icerik_json)
+    return None
+
+def github_a_kaydet(veri_listesi, dosya_yolu="mac_programi.json"):
+    """Veriyi GitHub reposuna JSON olarak kaydeder."""
+    try:
+        token = st.secrets["GITHUB_TOKEN"]
+        repo = st.secrets["REPO_NAME"]
+    except KeyError:
+        return False, "Hata: Streamlit Secrets içinde GITHUB_TOKEN veya REPO_NAME bulunamadı!"
+
+    url = f"https://api.github.com/repos/{repo}/contents/{dosya_yolu}"
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
     sha = None
     cevap_get = requests.get(url, headers=headers)
     if cevap_get.status_code == 200:
@@ -65,7 +85,6 @@ def ayarlari_ayikla(df):
             if len(satirlar) >= 4:
                 saat = satirlar[0] 
                 oyuncu_1 = satirlar[1] 
-                
                 kategori = next((s for s in satirlar if "Yaş" in s or "Kategori" in s), "Kategori Bulunamadı")
                 
                 try:
@@ -85,6 +104,23 @@ def ayarlari_ayikla(df):
                 
     return pd.DataFrame(mac_listesi)
 
+# --- ARAYÜZ ---
+
+# 1. Aşama: Sayfa açıldığında kayıtlı veriyi kontrol et
+mevcut_program = githubdan_veri_getir()
+
+if mevcut_program:
+    st.info("Sistemde aktif bir maç programı çalışıyor.")
+    st.subheader("🎾 Güncel Maç Programı")
+    df_mevcut = pd.DataFrame(mevcut_program)
+    df_mevcut.index = df_mevcut.index + 1
+    st.dataframe(df_mevcut, use_container_width=True)
+    st.divider()
+    st.write("**Yeni bir program (PDF) yüklemek veya mevcut programı ezmek isterseniz aşağıdaki alanı kullanabilirsiniz:**")
+else:
+    st.warning("Sistemde henüz kayıtlı bir maç programı yok. Lütfen PDF yükleyin.")
+
+# 2. Aşama: PDF Yükleme Alanı
 yuklenen_pdf = st.file_uploader("Maç Programı (PDF) Yükle", type="pdf")
 
 if yuklenen_pdf:
@@ -112,25 +148,20 @@ if yuklenen_pdf:
                             toplam_mac_sayisi += len(df_temiz)
             
             if not tum_temiz_veriler.empty:
-                st.success(f"Tüm sayfalar başarıyla ayrıştırıldı! Toplam {toplam_mac_sayisi} maç bulundu.")
-                
-                st.subheader("📋 Temizlenmiş Maç Listesi")
-                
+                st.success(f"PDF ayrıştırıldı! Toplam {toplam_mac_sayisi} maç bulundu.")
+                st.subheader("📋 Yeni Yüklenen Maç Listesi Önizlemesi")
                 tum_temiz_veriler.index = tum_temiz_veriler.index + 1
-                
                 st.dataframe(tum_temiz_veriler, use_container_width=True)
                 
-                st.divider()
                 st.subheader("⚙️ Programı Yayınla")
                 
                 if st.button("✅ Programı Onayla ve GitHub'a Kaydet", type="primary"):
                     with st.spinner("GitHub'a kaydediliyor..."):
                         kayit_verisi = tum_temiz_veriler.to_dict(orient="records")
-                        
                         basarili_mi, mesaj = github_a_kaydet(kayit_verisi)
                         
                         if basarili_mi:
-                            st.success("Harika! Maç programı GitHub'a (mac_programi.json) başarıyla kaydedildi.")
+                            st.success("Maç programı başarıyla güncellendi! Sayfayı yenilediğinizde aktif program olarak görünecektir.")
                         else:
                             st.error(f"Kayıt işlemi başarısız oldu: {mesaj}")
                             
