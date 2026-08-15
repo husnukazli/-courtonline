@@ -52,6 +52,9 @@ def skor_cozumle(skor_str):
     except: pass
     return sets
 
+# 5'er dakikalık saat listesi üretici (07:00 - 23:00)
+SAAT_LISTESI = ["Secilmedi"] + [f"{h:02d}:{m:02d}" for h in range(7, 23) for m in range(0, 60, 5)]
+
 hakem_verileri = githubdan_veri_getir("hakemler.json") or {}
 
 if "hakem_giris" not in st.session_state: st.session_state.hakem_giris = False
@@ -116,11 +119,15 @@ else:
             s3_p2 = st.number_input("O2 Set 3", 0, 7, mevcut_skorlar["s3_p2"])
             
         with st.expander("Ek Detaylar (Saat, Kura Tercihi ve Saha Tarafı)"):
+            # 5'er dakikalık aralıklı mobil uyumlu saat seçim kutuları
+            m_bas = secilen_mac.get("Baslangic_Saati", "Secilmedi")
+            m_bit = secilen_mac.get("Bitis_Saati", "Secilmedi")
+            
             col_z1, col_z2 = st.columns(2)
             with col_z1:
-                baslangic_saati = st.text_input("Baslama Saati", value=secilen_mac.get("Baslangic_Saati", ""))
+                baslangic_saati = st.selectbox("Baslama Saati", SAAT_LISTESI, index=SAAT_LISTESI.index(m_bas) if m_bas in SAAT_LISTESI else 0)
             with col_z2:
-                bitis_saati = st.text_input("Bitis Saati", value=secilen_mac.get("Bitis_Saati", ""))
+                bitis_saati = st.selectbox("Bitis Saati", SAAT_LISTESI, index=SAAT_LISTESI.index(m_bit) if m_bit in SAAT_LISTESI else 0)
                 
             kura_ops = ["Secilmedi", secilen_mac['Oyuncu 1'], secilen_mac['Oyuncu 2']]
             kz = secilen_mac.get("Kura_Kazanan", "Secilmedi")
@@ -140,15 +147,17 @@ else:
             if s3_p1 > 0 or s3_p2 > 0: 
                 skor_metni += f" {s3_p1}/{s3_p2}"
                 
-            # Maç ilk defa Bitti olarak işaretleniyorsa ve daha önce süresi arşive işlenmediyse ekliyoruz
+            # Maç Bitti ve süre işlenmediyse kalıcı arşiv ortalamasına ekle
+            b_saat_str = baslangic_saati if baslangic_saati != "Secilmedi" else ""
+            bit_saat_str = bitis_saati if bitis_saati != "Secilmedi" else ""
+            
             if yeni_durum == "Bitti" and not secilen_mac.get("sure_islendi", False):
-                if baslangic_saati and bitis_saati:
+                if b_saat_str and bit_saat_str:
                     try:
-                        t1 = datetime.strptime(baslangic_saati.strip(), "%H:%M")
-                        t2 = datetime.strptime(bitis_saati.strip(), "%H:%M")
+                        t1 = datetime.strptime(b_saat_str.strip(), "%H:%M")
+                        t2 = datetime.strptime(bit_saat_str.strip(), "%H:%M")
                         diff = (t2 - t1).total_seconds() / 60
                         if diff > 0:
-                            # Kalıcı istatistik dosyasını GitHub'dan çek
                             istatistikler = githubdan_veri_getir("turnuva_istatistikleri.json")
                             if not isinstance(istatistikler, dict):
                                 istatistikler = {"sureler": []}
@@ -163,8 +172,8 @@ else:
 
             df_maclar.loc[gercek_idx, "Durum"] = yeni_durum
             df_maclar.loc[gercek_idx, "Skor"] = skor_metni
-            df_maclar.loc[gercek_idx, "Baslangic_Saati"] = baslangic_saati
-            df_maclar.loc[gercek_idx, "Bitis_Saati"] = bitis_saati
+            df_maclar.loc[gercek_idx, "Baslangic_Saati"] = b_saat_str
+            df_maclar.loc[gercek_idx, "Bitis_Saati"] = bit_saat_str
             df_maclar.loc[gercek_idx, "Kura_Kazanan"] = kura_kazanan
             df_maclar.loc[gercek_idx, "Kura_Tercih"] = kura_tercih
             df_maclar.loc[gercek_idx, "Saha_Tarafi"] = saha_tarafi
@@ -172,7 +181,7 @@ else:
             
             basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
             if basarili: 
-                st.success("Skor ve detaylar basariyla kaydedildi!")
+                st.success("Skor ve detaylar basariyla güncellendi!")
             else: 
                 st.error(f"Hata: {mesaj}")
     else:
