@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import base64
 import json
+from datetime import datetime
 
 st.set_page_config(page_title="Kort Hakemi Paneli", layout="centered")
 
@@ -53,7 +54,7 @@ def github_a_kaydet(veri_listesi, dosya_yolu):
     else:
         return False, cevap_put.text
 
-# GitHub'dan güncel hakem şifrelerini çek
+# Hakemleri ve Programı Çek
 hakem_verileri = githubdan_veri_getir("hakemler.json")
 if not isinstance(hakem_verileri, dict):
     hakem_verileri = {}
@@ -66,20 +67,23 @@ if not st.session_state.hakem_giris:
     st.subheader("Hakem Giris Ekrani")
     
     if not hakem_verileri:
-        st.warning("Sistemde tanimli hakem bulunamadi. Lutfen once Bashekim panelinden hakem ekleyin.")
-    
-    kullanici_adi = st.text_input("Kullanici Adi")
+        st.warning("Sistemde tanimli hakem bulunamadi. Bashekim panelinden hakem ekleyin.")
+        hakem_listesi = []
+    else:
+        hakem_listesi = list(hakem_verileri.keys())
+        
+    secilen_hakem = st.selectbox("Hakem İsminizi Secin", [""] + hakem_listesi)
     sifre = st.text_input("Sifre", type="password")
     
     if st.button("Giris Yap"):
-        if kullanici_adi in hakem_verileri and hakem_verileri[kullanici_adi] == sifre:
+        if secilen_hakem and secilen_hakem in hakem_verileri and hakem_verileri[secilen_hakem] == sifre:
             st.session_state.hakem_giris = True
-            st.session_state.kullanici = kullanici_adi
+            st.session_state.kullanici = secilen_hakem
             st.rerun()
         else:
-            st.error("Kullanici adi veya sifre hatali.")
+            st.error("Lutfen isminizi secin ve dogru sifreyi girin.")
 else:
-    st.write(f"Giris yapan hakem: **{st.session_state.kullanici}**")
+    st.write(f"Gorevli Hakem: **{st.session_state.kullanici}**")
     if st.button("Cikis Yap"):
         st.session_state.hakem_giris = False
         st.rerun()
@@ -94,7 +98,7 @@ else:
         df_maclar = pd.DataFrame(program)
         aktif_kortlar = sorted(df_maclar["Kort"].unique())
         
-        secilen_kort = st.selectbox("Gorevli Oldugunuz Kortu Secin", aktif_kortlar)
+        secilen_kort = st.selectbox("Gorevli Oldugunuz Kort", aktif_kortlar)
         
         if secilen_kort:
             st.markdown(f"### {secilen_kort} Mac Listesi")
@@ -106,42 +110,94 @@ else:
             mac_indexleri = []
             
             for idx, row in kort_maclari.iterrows():
+                durum = row.get('Durum', 'Baslamadi')
                 durum_etiketi = "[Bekliyor]"
-                if row['Durum'] == "Oynaniyor":
-                    durum_etiketi = "[OYNANIYOR]"
-                elif row['Durum'] == "Bitti":
-                    durum_etiketi = "[BITTI]"
+                if durum == "Oynaniyor":
+                    durum_etiketi = "[DEVAM EDİYOR]"
+                elif durum == "Bitti":
+                    durum_etiketi = "[BİTTİ]"
                     
-                metin = f"Saat: {row['Saat']} | {row['Oyuncu 1']} vs {row['Oyuncu 2']} {durum_etiketi}"
+                metin = f"{row['Saat']} | {row['Oyuncu 1']} vs {row['Oyuncu 2']} {durum_etiketi}"
                 mac_secenekleri.append(metin)
                 mac_indexleri.append(idx)
                 
             if mac_secenekleri:
-                secilen_mac_metin = st.selectbox("Islem Yapilacak Maci Secin", mac_secenekleri)
+                secilen_mac_metin = st.selectbox("Uzerinde Islem Yapilacak Maci Secin", mac_secenekleri)
                 secilen_index = mac_secenekleri.index(secilen_mac_metin)
                 gercek_idx = mac_indexleri[secilen_index]
                 secilen_mac = df_maclar.loc[gercek_idx]
                 
                 st.divider()
-                st.markdown(f"**Secilen Mac:** {secilen_mac['Oyuncu 1']} vs {secilen_mac['Oyuncu 2']}")
-                st.markdown(f"**Kategori:** {secilen_mac['Kategori']} | **Saat:** {secilen_mac['Saat']}")
+                st.markdown(f"**Oyuncular:** {secilen_mac['Oyuncu 1']} vs {secilen_mac['Oyuncu 2']}")
+                st.markdown(f"**Kategori:** {secilen_mac['Kategori']} | **Planlanan Saat:** {secilen_mac['Saat']}")
                 
+                # Durum Seçimi (Renk vurgulu mantık için)
+                mevcut_durum = secilen_mac.get("Durum", "Baslamadi")
                 yeni_durum = st.selectbox(
                     "Mac Durumu", 
                     ["Baslamadi", "Oynaniyor", "Bitti"], 
-                    index=["Baslamadi", "Oynaniyor", "Bitti"].index(secilen_mac.get("Durum", "Baslamadi"))
+                    index=["Baslamadi", "Oynaniyor", "Bitti"].index(mevcut_durum)
                 )
                 
-                yeni_skor = st.text_input("Skor (Orn: 6/4 6/2)", value=secilen_mac.get("Skor", ""))
+                # Zaman Takibi
+                col_z1, col_z2 = st.columns(2)
+                with col_z1:
+                    baslangic_saati = st.text_input("Mac Baslama Saati", value=secilen_mac.get("Baslangic_Saati", ""))
+                with col_z2:
+                    bitis_saati = st.text_input("Mac Bitis Saati", value=secilen_mac.get("Bitis_Saati", ""))
                 
-                if st.button("Skoru ve Durumu Guncelle"):
+                # Kura Bilgileri
+                st.markdown("---")
+                st.markdown("**Kura Bilgileri**")
+                col_k1, col_k2 = st.columns(2)
+                with col_k1:
+                    kura_kazanan = st.selectbox(
+                        "Kurayi Kazanən", 
+                        ["Seçilmedi", secilen_mac['Oyuncu 1'], secilen_mac['Oyuncu 2']],
+                        index=0 if not secilen_mac.get("Kura_Kazanan") else (0 if secilen_mac.get("Kura_Kazanan") == "Seçilmedi" else (1 if secilen_mac.get("Kura_Kazanan") == secilen_mac['Oyuncu 1'] else 2))
+                    )
+                with col_k2:
+                    kura_tercih = st.selectbox(
+                        "Kura Tercihi", 
+                        ["Seçilmedi", "Servis", "Karsilama", "Kort Secimi"],
+                        index=0 if not secilen_mac.get("Kura_Tercih") else ["Seçilmedi", "Servis", "Karsilama", "Kort Secimi"].index(secilen_mac.get("Kura_Tercih", "Seçilmedi"))
+                    )
+
+                # Yapılandırılmış Set Skor Girişi (3 Set, İkişer Kutu)
+                st.markdown("---")
+                st.markdown("**Set Skorlari**")
+                
+                col_s1, col_s2, col_s3 = st.columns(3)
+                with col_s1:
+                    st.text("1. Set")
+                    s1_p1 = st.number_input(f"{secilen_mac['Oyuncu 1']} (Set 1)", min_value=0, max_value=7, value=0, key="s1_p1")
+                    s1_p2 = st.number_input(f"{secilen_mac['Oyuncu 2']} (Set 1)", min_value=0, max_value=7, value=0, key="s1_p2")
+                with col_s2:
+                    st.text("2. Set")
+                    s2_p1 = st.number_input(f"{secilen_mac['Oyuncu 1']} (Set 2)", min_value=0, max_value=7, value=0, key="s2_p1")
+                    s2_p2 = st.number_input(f"{secilen_mac['Oyuncu 2']} (Set 2)", min_value=0, max_value=7, value=0, key="s2_p2")
+                with col_s3:
+                    st.text("3. Set")
+                    s3_p1 = st.number_input(f"{secilen_mac['Oyuncu 1']} (Set 3)", min_value=0, max_value=7, value=0, key="s3_p1")
+                    s3_p2 = st.number_input(f"{secilen_mac['Oyuncu 2']} (Set 3)", min_value=0, max_value=7, value=0, key="s3_p2")
+                
+                if st.button("Skoru ve Durumu Kaydet", type="primary"):
+                    # Skorları otomatik formatla
+                    skor_metni = f"{s1_p1}/{s1_p2} {s2_p1}/{s2_p2}"
+                    if s3_p1 > 0 or s3_p2 > 0:
+                        skor_metni += f" {s3_p1}/{s3_p2}"
+                        
                     df_maclar.loc[gercek_idx, "Durum"] = yeni_durum
-                    df_maclar.loc[gercek_idx, "Skor"] = yeni_skor
+                    df_maclar.loc[gercek_idx, "Skor"] = skor_metni
+                    df_maclar.loc[gercek_idx, "Baslangic_Saati"] = baslangic_saati
+                    df_maclar.loc[gercek_idx, "Bitis_Saati"] = bitis_saati
+                    df_maclar.loc[gercek_idx, "Kura_Kazanan"] = kura_kazanan
+                    df_maclar.loc[gercek_idx, "Kura_Tercih"] = kura_tercih
                     
                     basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
                     if basarili:
-                        st.success("Guncelleme basariyla kaydedildi.")
+                        st.success("Skor ve durum basariyla güncellendi!")
                     else:
                         st.error(f"Hata: {mesaj}")
             else:
-                st.info("Bu kortta tanimli mac bulunmuyor.")
+                st.info("Bu kortta mac bulunmuyor.")
