@@ -98,7 +98,8 @@ def ayarlari_ayikla(df):
                     "Kategori": kategori,
                     "Oyuncu 1": oyuncu_1,
                     "Oyuncu 2": oyuncu_2,
-                    "Durum": "Baslamadi" # Bekliyor (Gri) / Oynaniyor (Yesil) / Bitti (Kirmizi)
+                    "Durum": "Baslamadi", # Baslamadi, Oynaniyor, Bitti
+                    "Skor": "-"          # Hakem girdikçe burası güncellenecek
                 })
                 
     return pd.DataFrame(mac_listesi)
@@ -107,46 +108,53 @@ def ayarlari_ayikla(df):
 mevcut_program = githubdan_veri_getir()
 
 if mevcut_program:
-    st.success("🟢 Aktif Maç Programı Yüklendi. Kort Akışı Aşağıdadır:")
+    st.success("🟢 Aktif Maç Programı Yüklendi.")
     
     df_maclar = pd.DataFrame(mevcut_program)
     
-    # 6 Kort için yan yana 6 sütun oluşturuyoruz
-    kortlar = [f"Kort {i}" for i in range(1, 7)]
-    sutunlar = st.columns(6)
+    # 📌 DİNAMİK KORT TESPİTİ: PDF'te kaç kort varsa otomatik algılar (3, 6, 10 fark etmez)
+    aktif_kortlar = sorted(df_maclar["Kort"].unique(), key=lambda x: int(x.replace("Kort", "").strip()) if x.replace("Kort", "").strip().isdigit() else x)
     
-    for idx, kort_adi in enumerate(kortlar):
-        with sutunlar[idx]:
-            st.markdown(f"### 🏟️ {kort_adi}")
-            st.divider()
-            
-            # Bu korta ait maçları filtrele
-            kort_maclari = df_maclar[df_maclar["Kort"] == kort_adi]
-            
-            if kort_maclari.empty:
-                st.caption("Maç yok")
-            else:
-                for _, mac in kort_maclari.iterrows():
-                    # Maç durumuna göre görsel renk ikonları
-                    durum = mac.get("Durum", "Baslamadi")
-                    ikon = "⚪"
-                    if durum == "Oynaniyor":
-                        ikon = "🟢"
-                    elif durum == "Bitti":
-                        ikon = "🔴"
+    if aktif_kortlar:
+        sutunlar = st.columns(len(aktif_kortlar))
+        
+        for idx, kort_adi in enumerate(aktif_kortlar):
+            with sutunlar[idx]:
+                st.markdown(f"### 🏟️ {kort_adi}")
+                st.divider()
+                
+                kort_maclari = df_maclar[df_maclar["Kort"] == kort_adi]
+                
+                if kort_maclari.empty:
+                    st.caption("Maç yok")
+                else:
+                    for _, mac in kort_maclari.iterrows():
+                        durum = mac.get("Durum", "Baslamadi")
+                        skor = mac.get("Skor", "-")
                         
-                    # Kompakt Maç Kutusu
-                    with st.container(border=True):
-                        st.markdown(f"**{mac['Saat']}** {ikon}")
-                        st.caption(f"{mac['Kategori']}")
-                        st.write(f"👤 {mac['Oyuncu 1']}")
-                        st.write(f"👤 {mac['Oyuncu 2']}")
-                        
+                        ikon = "⚪"
+                        if durum == "Oynaniyor":
+                            ikon = "🟢"
+                        elif durum == "Bitti":
+                            ikon = "🔴"
+                            
+                        # Kompakt Maç Kutusu (Skor Alanı Dahil)
+                        with st.container(border=True):
+                            st.markdown(f"**{mac['Saat']}** {ikon}")
+                            st.caption(f"{mac['Kategori']}")
+                            st.write(f"▪️ {mac['Oyuncu 1']}")
+                            st.write(f"▪️ {mac['Oyuncu 2']}")
+                            
+                            # Skor Gösterim Alanı
+                            if skor != "-":
+                                st.markdown(f"**Skor:** `{skor}`")
+                            else:
+                                st.markdown(f"_Skor girilmedi_")
+    
     st.divider()
     with st.expander("🛠️ Yeni PDF Yükle ve Programı Güncelle"):
         yuklenen_pdf = st.file_uploader("Maç Programı (PDF) Yükle", type="pdf")
         if yuklenen_pdf:
-            # (PDF İşleme ve Kaydetme Mantığı)
             with st.spinner("PDF işleniyor..."):
                 tum_temiz_veriler = pd.DataFrame()
                 with pdfplumber.open(yuklenen_pdf) as pdf:
@@ -173,7 +181,6 @@ else:
     st.warning("Sistemde kayıtlı maç programı bulunamadı. Lütfen aşağıdan PDF yükleyin.")
     yuklenen_pdf = st.file_uploader("Maç Programı (PDF) Yükle", type="pdf")
     if yuklenen_pdf:
-        # Aynı PDF yükleme akışı
         with st.spinner("İlk yükleme yapılıyor..."):
             tum_temiz_veriler = pd.DataFrame()
             with pdfplumber.open(yuklenen_pdf) as pdf:
