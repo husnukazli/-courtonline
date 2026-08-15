@@ -86,7 +86,6 @@ def ayarlari_ayikla(df):
                 })
     return pd.DataFrame(mac_listesi)
 
-# Başhakem Giriş Kontrolü
 if "bashakem_giris" not in st.session_state:
     st.session_state.bashakem_giris = False
 
@@ -185,10 +184,11 @@ else:
                             durum = mac.get("Durum", "Baslamadi")
                             skor = mac.get("Skor", "-")
                             
+                            # Devam eden maçlar için skor fontu daha büyük ve okunabilir yapıldı
                             if durum == "Oynaniyor":
                                 durum_str = "DEVAM"
                                 durum_style = "color: #00FF66; font-weight: bold;"
-                                skor_style = "color: #00FF66; font-weight: bold; font-size: 13px;"
+                                skor_style = "color: #00FF66; font-weight: bold; font-size: 15px;"
                             elif durum == "Bitti":
                                 durum_str = "BITTI"
                                 durum_style = "color: #FF1744; font-weight: bold;"
@@ -196,7 +196,7 @@ else:
                             else:
                                 durum_str = "Bekliyor"
                                 durum_style = "color: #888888;"
-                                skor_style = "color: #888888;"
+                                skor_style = "color: #888888; font-size: 11px;"
 
                             card_html = f"""
                             <div style="border: 1px solid #444; border-radius: 4px; padding: 5px; margin-bottom: 4px; background-color: #1a1a1a; color: #e0e0e0; font-size: 11px; line-height: 1.1;">
@@ -239,7 +239,7 @@ else:
                     
                     if not tum_temiz_veriler.empty:
                         st.dataframe(tum_temiz_veriler, use_container_width=True)
-                        if st.button("Onayla ve Kaydet"):
+                        if st.button("Onayla und Kaydet"):
                             basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
                             if basarili:
                                 st.success("Kaydedildi. Sayfayi yenileyin.")
