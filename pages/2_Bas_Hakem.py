@@ -5,11 +5,10 @@ import requests
 import base64
 import json
 
-st.set_page_config(page_title="Başhakem Paneli", layout="wide")
+st.set_page_config(page_title="Bashekim Paneli", layout="wide")
 
-st.title("Başhakem Kort Akış Paneli")
+st.title("Bashekim Kort Akis Paneli")
 
-# --- GITHUB FONKSİYONLARI ---
 def githubdan_veri_getir(dosya_yolu):
     try:
         token = st.secrets["GITHUB_TOKEN"]
@@ -67,7 +66,7 @@ def ayarlari_ayikla(df):
             if len(satirlar) >= 4:
                 saat = satirlar[0] 
                 oyuncu_1 = satirlar[1] 
-                kategori = next((s for s in satirlar if "Yaş" in s or "Kategori" in s), "Kategori Yok")
+                kategori = next((s for s in satirlar if "Yas" in s or "Kategori" in s or "Yaş" in s), "Kategori Yok")
                 try:
                     kat_index = satirlar.index(kategori)
                     oyuncu_2 = satirlar[kat_index + 1]
@@ -80,12 +79,11 @@ def ayarlari_ayikla(df):
                     "Kategori": kategori,
                     "Oyuncu 1": oyuncu_1,
                     "Oyuncu 2": oyuncu_2,
-                    "Durum": "Baslamadi", # Baslamadi, Oynaniyor, Bitti
+                    "Durum": "Baslamadi",
                     "Skor": "-"
                 })
     return pd.DataFrame(mac_listesi)
 
-# --- ZOOM KONTROLÜ (EKRAN BOYUTLANDIRMA) ---
 col_zoom1, col_zoom2, _ = st.columns([2, 6, 4])
 with col_zoom1:
     zoom_seviyesi = st.slider("Gorunum Olcegi (%)", min_value=50, max_value=120, value=100, step=10)
@@ -100,7 +98,6 @@ st.markdown(f"""
 
 st.divider()
 
-# --- ANA AKIŞ ---
 mevcut_program = githubdan_veri_getir("mac_programi.json")
 
 if mevcut_program:
@@ -123,18 +120,17 @@ if mevcut_program:
                         durum = mac.get("Durum", "Baslamadi")
                         skor = mac.get("Skor", "-")
                         
-                        # Renk durum göstergeleri (Sade metin/simge)
                         durum_isareti = "[Bekliyor]"
                         if durum == "Oynaniyor":
                             durum_isareti = "[DEVAM EDİYOR]"
                         elif durum == "Bitti":
-                            durum_isareti = "[BİTTİ]"
+                            durum_isareti = "[BITTI]"
                             
                         with st.container(border=True):
                             st.text(f"{mac['Saat']} {durum_isareti}")
                             st.caption(f"{mac['Kategori']}")
                             st.write(f"{mac['Oyuncu 1']}")
-                            st.write(f"vs")
+                            st.write("vs")
                             st.write(f"{mac['Oyuncu 2']}")
                             
                             if skor != "-":
@@ -183,7 +179,7 @@ else:
                         df_temiz = ayarlari_ayikla(df_ham)
                         if not df_temiz.empty:
                             tum_temiz_veriler = pd.concat([tum_temiz_veriler, df_temiz], ignore_index=True)
-            if not tum_secenek := tum_temiz_veriler.empty:
+            if not tum_temiz_veriler.empty:
                 st.dataframe(tum_temiz_veriler, use_container_width=True)
                 if st.button("Ilk Kaydi Olustur"):
                     basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
