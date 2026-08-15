@@ -52,7 +52,6 @@ def skor_cozumle(skor_str):
     except: pass
     return sets
 
-# 5'er dakikalık saat listesi üretici (07:00 - 23:00)
 SAAT_LISTESI = ["Secilmedi"] + [f"{h:02d}:{m:02d}" for h in range(7, 23) for m in range(0, 60, 5)]
 
 hakem_verileri = githubdan_veri_getir("hakemler.json") or {}
@@ -97,7 +96,10 @@ else:
         gercek_idx = next(m[1] for m in mac_secenekleri if m[0] == secilen_text)
         secilen_mac = df_maclar.loc[gercek_idx]
         
-        st.markdown(f"**{secilen_mac['Oyuncu 1']} vs {secilen_mac['Oyuncu 2']}**")
+        p1_isim = secilen_mac['Oyuncu 1']
+        p2_isim = secilen_mac['Oyuncu 2']
+        
+        st.markdown(f"**{p1_isim} vs {p2_isim}**")
         st.caption(f"Kategori: {secilen_mac['Kategori']}")
         
         mevcut_durum = secilen_mac.get("Durum", "Baslamadi")
@@ -107,19 +109,19 @@ else:
         st.markdown("**Set Skorlari**")
         mevcut_skorlar = skor_cozumle(secilen_mac.get("Skor", "-"))
         
+        # Etiketler artık genel O1/O2 yerine doğrudan oyuncuların isimleri ile geliyor
         col1, col2, col3 = st.columns(3)
         with col1:
-            s1_p1 = st.number_input("O1 Set 1", 0, 7, mevcut_skorlar["s1_p1"])
-            s1_p2 = st.number_input("O2 Set 1", 0, 7, mevcut_skorlar["s1_p2"])
+            s1_p1 = st.number_input(f"{p1_isim} (S1)", 0, 7, mevcut_skorlar["s1_p1"])
+            s1_p2 = st.number_input(f"{p2_isim} (S1)", 0, 7, mevcut_skorlar["s1_p2"])
         with col2:
-            s2_p1 = st.number_input("O1 Set 2", 0, 7, mevcut_skorlar["s2_p1"])
-            s2_p2 = st.number_input("O2 Set 2", 0, 7, mevcut_skorlar["s2_p2"])
+            s2_p1 = st.number_input(f"{p1_isim} (S2)", 0, 7, mevcut_skorlar["s2_p1"])
+            s2_p2 = st.number_input(f"{p2_isim} (S2)", 0, 7, mevcut_skorlar["s2_p2"])
         with col3:
-            s3_p1 = st.number_input("O1 Set 3", 0, 7, mevcut_skorlar["s3_p1"])
-            s3_p2 = st.number_input("O2 Set 3", 0, 7, mevcut_skorlar["s3_p2"])
+            s3_p1 = st.number_input(f"{p1_isim} (S3)", 0, 7, mevcut_skorlar["s3_p1"])
+            s3_p2 = st.number_input(f"{p2_isim} (S3)", 0, 7, mevcut_skorlar["s3_p2"])
             
         with st.expander("Ek Detaylar (Saat, Kura Tercihi ve Saha Tarafı)"):
-            # 5'er dakikalık aralıklı mobil uyumlu saat seçim kutuları
             m_bas = secilen_mac.get("Baslangic_Saati", "Secilmedi")
             m_bit = secilen_mac.get("Bitis_Saati", "Secilmedi")
             
@@ -129,7 +131,7 @@ else:
             with col_z2:
                 bitis_saati = st.selectbox("Bitis Saati", SAAT_LISTESI, index=SAAT_LISTESI.index(m_bit) if m_bit in SAAT_LISTESI else 0)
                 
-            kura_ops = ["Secilmedi", secilen_mac['Oyuncu 1'], secilen_mac['Oyuncu 2']]
+            kura_ops = ["Secilmedi", p1_isim, p2_isim]
             kz = secilen_mac.get("Kura_Kazanan", "Secilmedi")
             kura_kazanan = st.selectbox("Kurayi Kazanan", kura_ops, index=kura_ops.index(kz) if kz in kura_ops else 0)
             
@@ -147,7 +149,6 @@ else:
             if s3_p1 > 0 or s3_p2 > 0: 
                 skor_metni += f" {s3_p1}/{s3_p2}"
                 
-            # Maç Bitti ve süre işlenmediyse kalıcı arşiv ortalamasına ekle
             b_saat_str = baslangic_saati if baslangic_saati != "Secilmedi" else ""
             bit_saat_str = bitis_saati if bitis_saati != "Secilmedi" else ""
             
