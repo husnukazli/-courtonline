@@ -5,12 +5,12 @@ import requests
 import base64
 import json
 
-st.set_page_config(page_title="Baş Hakem Paneli", page_icon="👑", layout="wide")
+st.set_page_config(page_title="Başhakem Paneli", layout="wide")
 
-st.title("👑 Başhakem Kort Akış Paneli")
+st.title("Başhakem Kort Akış Paneli")
 
-def githubdan_veri_getir(dosya_yolu="mac_programi.json"):
-    """GitHub'daki güncel maç programını çeker."""
+# --- GITHUB FONKSİYONLARI ---
+def githubdan_veri_getir(dosya_yolu):
     try:
         token = st.secrets["GITHUB_TOKEN"]
         repo = st.secrets["REPO_NAME"]
@@ -18,32 +18,24 @@ def githubdan_veri_getir(dosya_yolu="mac_programi.json"):
         return None
 
     url = f"https://api.github.com/repos/{repo}/contents/{dosya_yolu}"
-    headers = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
     
     cevap = requests.get(url, headers=headers)
     if cevap.status_code == 200:
         icerik_b64 = cevap.json().get("content", "")
         if icerik_b64:
-            icerik_json = base64.b64decode(icerik_b64).decode('utf-8')
-            return json.loads(icerik_json)
+            return json.loads(base64.b64decode(icerik_b64).decode('utf-8'))
     return None
 
-def github_a_kaydet(veri_listesi, dosya_yolu="mac_programi.json"):
-    """Veriyi GitHub reposuna JSON olarak kaydeder."""
+def github_a_kaydet(veri_listesi, dosya_yolu):
     try:
         token = st.secrets["GITHUB_TOKEN"]
         repo = st.secrets["REPO_NAME"]
     except KeyError:
-        return False, "Hata: Streamlit Secrets içinde GITHUB_TOKEN veya REPO_NAME bulunamadı!"
+        return False, "Token eksik."
 
     url = f"https://api.github.com/repos/{repo}/contents/{dosya_yolu}"
-    headers = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
     
     sha = None
     cevap_get = requests.get(url, headers=headers)
@@ -53,39 +45,29 @@ def github_a_kaydet(veri_listesi, dosya_yolu="mac_programi.json"):
     icerik_json = json.dumps(veri_listesi, indent=4, ensure_ascii=False)
     icerik_b64 = base64.b64encode(icerik_json.encode('utf-8')).decode('utf-8')
     
-    payload = {
-        "message": f"Başhakem onayı: {dosya_yolu} güncellendi",
-        "content": icerik_b64
-    }
+    payload = {"message": f"Guncelleme: {dosya_yolu}", "content": icerik_b64}
     if sha:
         payload["sha"] = sha
         
     cevap_put = requests.put(url, headers=headers, json=payload)
-    
     if cevap_put.status_code in [200, 201]:
-        return True, "Başarılı"
+        return True, "Basarili"
     else:
-        return False, f"GitHub Hatası: {cevap_put.text}"
+        return False, cevap_put.text
 
 def ayarlari_ayikla(df):
-    """Karmaşık tablo hücrelerini okuyup temiz bir maç listesine dönüştürür."""
     mac_listesi = []
-    
     for kort in df.columns:
         if not str(kort).startswith("Kort"):
             continue
-            
         for hucre in df[kort]:
             if pd.isna(hucre) or str(hucre).strip() == "":
                 continue
-            
             satirlar = [s.strip() for s in str(hucre).split('\n') if s.strip()]
-            
             if len(satirlar) >= 4:
                 saat = satirlar[0] 
                 oyuncu_1 = satirlar[1] 
-                kategori = next((s for s in satirlar if "Yaş" in s or "Kategori" in s), "Kategori Bulunamadı")
-                
+                kategori = next((s for s in satirlar if "Yaş" in s or "Kategori" in s), "Kategori Yok")
                 try:
                     kat_index = satirlar.index(kategori)
                     oyuncu_2 = satirlar[kat_index + 1]
@@ -99,20 +81,30 @@ def ayarlari_ayikla(df):
                     "Oyuncu 1": oyuncu_1,
                     "Oyuncu 2": oyuncu_2,
                     "Durum": "Baslamadi", # Baslamadi, Oynaniyor, Bitti
-                    "Skor": "-"          # Hakem girdikçe burası güncellenecek
+                    "Skor": "-"
                 })
-                
     return pd.DataFrame(mac_listesi)
 
+# --- ZOOM KONTROLÜ (EKRAN BOYUTLANDIRMA) ---
+col_zoom1, col_zoom2, _ = st.columns([2, 6, 4])
+with col_zoom1:
+    zoom_seviyesi = st.slider("Gorunum Olcegi (%)", min_value=50, max_value=120, value=100, step=10)
+
+st.markdown(f"""
+    <style>
+    .stApp {{
+        zoom: {zoom_seviyesi}%;
+    }}
+    </style>
+""", unsafe_allow_html=True)
+
+st.divider()
+
 # --- ANA AKIŞ ---
-mevcut_program = githubdan_veri_getir()
+mevcut_program = githubdan_veri_getir("mac_programi.json")
 
 if mevcut_program:
-    st.success("🟢 Aktif Maç Programı Yüklendi.")
-    
     df_maclar = pd.DataFrame(mevcut_program)
-    
-    # 📌 DİNAMİK KORT TESPİTİ: PDF'te kaç kort varsa otomatik algılar (3, 6, 10 fark etmez)
     aktif_kortlar = sorted(df_maclar["Kort"].unique(), key=lambda x: int(x.replace("Kort", "").strip()) if x.replace("Kort", "").strip().isdigit() else x)
     
     if aktif_kortlar:
@@ -120,42 +112,39 @@ if mevcut_program:
         
         for idx, kort_adi in enumerate(aktif_kortlar):
             with sutunlar[idx]:
-                st.markdown(f"### 🏟️ {kort_adi}")
-                st.divider()
+                st.subheader(kort_adi)
                 
                 kort_maclari = df_maclar[df_maclar["Kort"] == kort_adi]
                 
                 if kort_maclari.empty:
-                    st.caption("Maç yok")
+                    st.caption("Mac yok")
                 else:
-                    for _, mac in kort_maclari.iterrows():
+                    for i, mac in kort_maclari.iterrows():
                         durum = mac.get("Durum", "Baslamadi")
                         skor = mac.get("Skor", "-")
                         
-                        ikon = "⚪"
+                        # Renk durum göstergeleri (Sade metin/simge)
+                        durum_isareti = "[Bekliyor]"
                         if durum == "Oynaniyor":
-                            ikon = "🟢"
+                            durum_isareti = "[DEVAM EDİYOR]"
                         elif durum == "Bitti":
-                            ikon = "🔴"
+                            durum_isareti = "[BİTTİ]"
                             
-                        # Kompakt Maç Kutusu (Skor Alanı Dahil)
                         with st.container(border=True):
-                            st.markdown(f"**{mac['Saat']}** {ikon}")
+                            st.text(f"{mac['Saat']} {durum_isareti}")
                             st.caption(f"{mac['Kategori']}")
-                            st.write(f"▪️ {mac['Oyuncu 1']}")
-                            st.write(f"▪️ {mac['Oyuncu 2']}")
+                            st.write(f"{mac['Oyuncu 1']}")
+                            st.write(f"vs")
+                            st.write(f"{mac['Oyuncu 2']}")
                             
-                            # Skor Gösterim Alanı
                             if skor != "-":
-                                st.markdown(f"**Skor:** `{skor}`")
-                            else:
-                                st.markdown(f"_Skor girilmedi_")
+                                st.code(skor, language=None)
     
     st.divider()
-    with st.expander("🛠️ Yeni PDF Yükle ve Programı Güncelle"):
-        yuklenen_pdf = st.file_uploader("Maç Programı (PDF) Yükle", type="pdf")
+    with st.expander("Yeni Program (PDF) Yukle"):
+        yuklenen_pdf = st.file_uploader("PDF Sec", type="pdf")
         if yuklenen_pdf:
-            with st.spinner("PDF işleniyor..."):
+            with st.spinner("Isleniyor..."):
                 tum_temiz_veriler = pd.DataFrame()
                 with pdfplumber.open(yuklenen_pdf) as pdf:
                     for sayfa in pdf.pages:
@@ -171,17 +160,17 @@ if mevcut_program:
                 
                 if not tum_temiz_veriler.empty:
                     st.dataframe(tum_temiz_veriler, use_container_width=True)
-                    if st.button("Onayla ve GitHub'a Kaydet", type="primary"):
-                        basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"))
+                    if st.button("Onayla ve Kaydet"):
+                        basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
                         if basarili:
-                            st.success("Güncellendi! Sayfayı yenileyebilirsiniz.")
+                            st.success("Kaydedildi. Sayfayi yenileyin.")
                         else:
                             st.error(mesaj)
 else:
-    st.warning("Sistemde kayıtlı maç programı bulunamadı. Lütfen aşağıdan PDF yükleyin.")
-    yuklenen_pdf = st.file_uploader("Maç Programı (PDF) Yükle", type="pdf")
+    st.info("Sistemde kayitli mac programi yok. Asagidan PDF yukleyin.")
+    yuklenen_pdf = st.file_uploader("Mac Programi Yukle", type="pdf")
     if yuklenen_pdf:
-        with st.spinner("İlk yükleme yapılıyor..."):
+        with st.spinner("Yukleniyor..."):
             tum_temiz_veriler = pd.DataFrame()
             with pdfplumber.open(yuklenen_pdf) as pdf:
                 for sayfa in pdf.pages:
@@ -194,9 +183,9 @@ else:
                         df_temiz = ayarlari_ayikla(df_ham)
                         if not df_temiz.empty:
                             tum_temiz_veriler = pd.concat([tum_temiz_veriler, df_temiz], ignore_index=True)
-            if not tum_temiz_veriler.empty:
+            if not tum_secenek := tum_temiz_veriler.empty:
                 st.dataframe(tum_temiz_veriler, use_container_width=True)
-                if st.button("Programı Kaydet", type="primary"):
-                    basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"))
+                if st.button("Ilk Kaydi Olustur"):
+                    basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
                     if basarili:
-                        st.success("Kayıt başarılı! Sayfayı yenileyin.")
+                        st.success("Basarili! Sayfayi yenileyin.")
