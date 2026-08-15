@@ -11,7 +11,6 @@ def ayarlari_ayikla(df):
     """Karmaşık tablo hücrelerini okuyup temiz bir maç listesine dönüştürür."""
     mac_listesi = []
     
-    # Sadece "Kort" ile başlayan sütunları döngüye alıyoruz
     for kort in df.columns:
         if not str(kort).startswith("Kort"):
             continue
@@ -20,18 +19,14 @@ def ayarlari_ayikla(df):
             if pd.isna(hucre) or str(hucre).strip() == "":
                 continue
             
-            # Hücre içindeki satırları yeni satır karakterine (\n) göre bölüyoruz
             satirlar = [s.strip() for s in str(hucre).split('\n') if s.strip()]
             
-            # Eğer hücre geçerli bir maç hücresiyse (saat, oyuncular, kategori)
             if len(satirlar) >= 4:
                 saat = satirlar[0] 
                 oyuncu_1 = satirlar[1] 
                 
-                # Kategoriyi ("Yaş" kelimesi geçen satırı) bul
                 kategori = next((s for s in satirlar if "Yaş" in s or "Kategori" in s), "Kategori Bulunamadı")
                 
-                # İkinci oyuncuyu bul (kategoriden sonraki satır)
                 try:
                     kat_index = satirlar.index(kategori)
                     oyuncu_2 = satirlar[kat_index + 1]
@@ -49,32 +44,48 @@ def ayarlari_ayikla(df):
                 
     return pd.DataFrame(mac_listesi)
 
-# PDF Yükleme Alanı
 yuklenen_pdf = st.file_uploader("Maç Programı (PDF) Yükle", type="pdf")
 
 if yuklenen_pdf:
     with st.spinner("PDF ayrıştırılıyor... Lütfen bekleyin."):
         try:
+            tum_temiz_veriler = pd.DataFrame() # Tüm sayfaların birleşeceği boş DataFrame
+            toplam_mac_sayisi = 0
+
             with pdfplumber.open(yuklenen_pdf) as pdf:
-                sayfa = pdf.pages[0]
-                tablo = sayfa.extract_table()
+                # PDF'teki tüm sayfaları döngüye al
+                for sayfa_no, sayfa in enumerate(pdf.pages):
+                    tablo = sayfa.extract_table()
+                    
+                    if tablo:
+                        # Tablonun ilk satırını sütun başlıkları yap
+                        df_ham = pd.DataFrame(tablo[1:], columns=tablo[0])
+                        
+                        # Eğer alt sayfalarda sütun başlıkları düzgün gelmediyse (None olduysa), düzeltmeye çalış
+                        if None in df_ham.columns:
+                             df_ham = df_ham.dropna(axis=1, how='all') # Tamamen boş sütunları at
+                             
+                             # Sütun başlıklarını düzeltmek için kort sayısına göre (Kort 1, Kort 2...) yeniden adlandırma (Gerekirse)
+                             yeni_sutunlar = [f"Kort {i+1}" for i in range(len(df_ham.columns))]
+                             df_ham.columns = yeni_sutunlar
+
+
+                        df_temiz = ayarlari_ayikla(df_ham)
+                        
+                        if not df_temiz.empty:
+                            tum_temiz_veriler = pd.concat([tum_temiz_veriler, df_temiz], ignore_index=True)
+                            toplam_mac_sayisi += len(df_temiz)
+            
+            if not tum_temiz_veriler.empty:
+                st.success(f"Tüm sayfalar başarıyla ayrıştırıldı! Toplam {toplam_mac_sayisi} maç bulundu.")
                 
-                if tablo:
-                    # Ham tabloyu dataframe yapıyoruz
-                    df_ham = pd.DataFrame(tablo[1:], columns=tablo[0])
-                    
-                    # Ayıklama fonksiyonunu çalıştırıp temiz listeyi alıyoruz
-                    df_temiz = ayarlari_ayikla(df_ham)
-                    
-                    st.success("Maçlar başarıyla ayrıştırıldı!")
-                    
-                    st.subheader("📋 Temizlenmiş Maç Listesi")
-                    st.write("Veriler JSON dosyasına yazılmadan önceki son hali:")
-                    
-                    # Temizlenmiş veriyi ekranda göster
-                    st.dataframe(df_temiz, use_container_width=True)
-                    
-                else:
-                    st.error("PDF içinde tablo bulunamadı.")
+                st.subheader("📋 Temizlenmiş Maç Listesi (Tüm Sayfalar)")
+                st.write("Veriler JSON dosyasına yazılmadan önceki son hali:")
+                
+                st.dataframe(tum_temiz_veriler, use_container_width=True)
+                
+            else:
+                st.error("PDF içinde tablo bulunamadı veya veriler çıkartılamadı.")
+                
         except Exception as e:
             st.error(f"Okuma hatası: {e}")
