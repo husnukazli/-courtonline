@@ -8,12 +8,6 @@ st.set_page_config(page_title="Kort Hakemi Paneli", layout="centered")
 
 st.title("Kort Hakemi Paneli")
 
-HAKEM_SIFRELERI = {
-    "hakem1": "1234",
-    "hakem2": "1234",
-    "baslik": "admin"
-}
-
 def githubdan_veri_getir(dosya_yolu):
     try:
         token = st.secrets["GITHUB_TOKEN"]
@@ -59,24 +53,33 @@ def github_a_kaydet(veri_listesi, dosya_yolu):
     else:
         return False, cevap_put.text
 
+# GitHub'dan güncel hakem şifrelerini çek
+hakem_verileri = githubdan_veri_getir("hakemler.json")
+if not isinstance(hakem_verileri, dict):
+    hakem_verileri = {}
+
 if "hakem_giris" not in st.session_state:
     st.session_state.hakem_giris = False
     st.session_state.kullanici = ""
 
 if not st.session_state.hakem_giris:
     st.subheader("Hakem Giris Ekrani")
+    
+    if not hakem_verileri:
+        st.warning("Sistemde tanimli hakem bulunamadi. Lutfen once Bashekim panelinden hakem ekleyin.")
+    
     kullanici_adi = st.text_input("Kullanici Adi")
     sifre = st.text_input("Sifre", type="password")
     
     if st.button("Giris Yap"):
-        if kullanici_adi in HAKEM_SIFRELERI and HAKEM_SIFRELERI[kullanici_adi] == sifre:
+        if kullanici_adi in hakem_verileri and hakem_verileri[kullanici_adi] == sifre:
             st.session_state.hakem_giris = True
             st.session_state.kullanici = kullanici_adi
             st.rerun()
         else:
             st.error("Kullanici adi veya sifre hatali.")
 else:
-    st.write(f"Giris yapan: **{st.session_state.kullanici}**")
+    st.write(f"Giris yapan hakem: **{st.session_state.kullanici}**")
     if st.button("Cikis Yap"):
         st.session_state.hakem_giris = False
         st.rerun()
@@ -113,9 +116,8 @@ else:
                 mac_secenekleri.append(metin)
                 mac_indexleri.append(idx)
                 
-            secilen_mac_metin = st.selectbox("Islem Yapilacak Maci Secin", mac_secenekleri)
-            
             if mac_secenekleri:
+                secilen_mac_metin = st.selectbox("Islem Yapilacak Maci Secin", mac_secenekleri)
                 secilen_index = mac_secenekleri.index(secilen_mac_metin)
                 gercek_idx = mac_indexleri[secilen_index]
                 secilen_mac = df_maclar.loc[gercek_idx]
@@ -141,3 +143,5 @@ else:
                         st.success("Guncelleme basariyla kaydedildi.")
                     else:
                         st.error(f"Hata: {mesaj}")
+            else:
+                st.info("Bu kortta tanimli mac bulunmuyor.")
