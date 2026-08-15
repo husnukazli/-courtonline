@@ -1,0 +1,6 @@
+graphviz
+fpdf2
+openpyxl
+pandas
+streamlit
+supabase
