@@ -84,7 +84,8 @@ def ayarlari_ayikla(df):
                 })
     return pd.DataFrame(mac_listesi)
 
-col_zoom1, col_zoom2, _ = st.columns([2, 6, 4])
+# --- ZOOM KONTROLÜ ---
+col_zoom1, _, _ = st.columns([2, 6, 4])
 with col_zoom1:
     zoom_seviyesi = st.slider("Gorunum Olcegi (%)", min_value=50, max_value=120, value=100, step=10)
 
@@ -98,6 +99,37 @@ st.markdown(f"""
 
 st.divider()
 
+# --- HAKEM YÖNETİMİ PANELİ (EXPANDER) ---
+with st.expander("Hakem Yonetimi (Hakem Ekle / Listele)"):
+    st.write("Turnuvada gorev alacak hakemleri buradan tanimlayabilirsiniz.")
+    
+    # Mevcut hakemleri çek
+    kayitli_hakemler = githubdan_veri_getir("hakemler.json")
+    if not isinstance(kayitli_hakemler, dict):
+        kayitli_hakemler = {}
+        
+    yeni_kullanici = st.text_input("Hakem Kullanici Adi")
+    yeni_sifre = st.text_input("Hakem Sifresi", type="password")
+    
+    if st.button("Hakem Ekle / Guncelle"):
+        if yeni_kullanici.strip() and yeni_sifre.strip():
+            kayitli_hakemler[yeni_kullanici.strip()] = yeni_sifre.strip()
+            basarili, mesaj = github_a_kaydet(kayitli_hakemler, "hakemler.json")
+            if basarili:
+                st.success(f"'{yeni_kullanici}' basariyla kaydedildi.")
+            else:
+                st.error(f"Kayıt hatası: {mesaj}")
+        else:
+            st.warning("Kullanici adi ve sifre bos olamaz.")
+            
+    if kayitli_hakemler:
+        st.write("Sistemde Kayitli Hakemler:")
+        df_hakem = pd.DataFrame(list(kayitli_hakemler.items()), columns=["Kullanici Adi", "Sifre"])
+        st.dataframe(df_hakem, use_container_width=True)
+
+st.divider()
+
+# --- ANA MAÇ AKIŞI ---
 mevcut_program = githubdan_veri_getir("mac_programi.json")
 
 if mevcut_program:
