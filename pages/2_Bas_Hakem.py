@@ -5,7 +5,7 @@ import requests
 import base64
 import json
 
-st.set_page_config(page_title="Bashekim Paneli", layout="wide")
+st.set_page_config(page_title="Bashakem Paneli", layout="wide")
 
 def githubdan_veri_getir(dosya_yolu):
     try:
@@ -86,31 +86,33 @@ def ayarlari_ayikla(df):
                 })
     return pd.DataFrame(mac_listesi)
 
-# Başhekim Giriş Kontrolü
-if "bashekim_giris" not in st.session_state:
-    st.session_state.bashekim_giris = False
+# Başhakem Giriş Kontrolü
+if "bashakem_giris" not in st.session_state:
+    st.session_state.bashakem_giris = False
 
-if not st.session_state.bashekim_giris:
-    st.title("Bashekim Giris Ekrani")
-    sifre_input = st.text_input("Bashekim Sifresi", type="password")
+if not st.session_state.bashakem_giris:
+    st.title("Bashakem Giris Ekrani")
+    sifre_input = st.text_input("Bashakem Sifresi", type="password")
     if st.button("Giris Yap"):
-        # Basit bir admin şifresi veya hakemler içindeki admin kontrolü
         if sifre_input == "1234":
-            st.session_state.bashekim_giris = True
+            st.session_state.bashakem_giris = True
             st.rerun()
         else:
             st.error("Hatali sifre.")
 else:
-    col_baslik, col_cikis = st.columns([8, 2])
+    col_baslik, col_yenile, col_cikis = st.columns([6, 2, 2])
     with col_baslik:
-        st.title("Bashekim Kort Akis Paneli")
+        st.title("Bashakem Kort Akis Paneli")
+    with col_yenile:
+        st.write("")
+        if st.button("Anlik Verileri Yenile"):
+            st.rerun()
     with col_cikis:
         st.write("")
         if st.button("Cikis Yap"):
-            st.session_state.bashekim_giris = False
+            st.session_state.bashakem_giris = False
             st.rerun()
 
-    # Zoom Kontrolü ve Kompakt Görünüm Ayarları
     col_zoom1, _, _ = st.columns([2, 6, 4])
     with col_zoom1:
         zoom_seviyesi = st.slider("Gorunum Olcegi (%)", min_value=50, max_value=120, value=90, step=10)
@@ -125,7 +127,6 @@ else:
 
     st.divider()
 
-    # Hakem Yönetimi Paneli
     with st.expander("Hakem Yonetimi (Hakem Ekle / Listele)"):
         kayitli_hakemler = githubdan_veri_getir("hakemler.json")
         if not isinstance(kayitli_hakemler, dict):
@@ -152,7 +153,6 @@ else:
 
     st.divider()
 
-    # Ana Maç Akışı ve Satır Hizalamalı Kompakt Izgara
     mevcut_program = githubdan_veri_getir("mac_programi.json")
 
     if mevcut_program:
@@ -160,7 +160,6 @@ else:
         aktif_kortlar = sorted(df_maclar["Kort"].unique(), key=lambda x: int(x.replace("Kort", "").strip()) if x.replace("Kort", "").strip().isdigit() else x)
         
         if aktif_kortlar:
-            # Her kortun maçlarını sözlükte toplayıp maksimum satır sayısını buluyoruz (Hizalama için)
             kort_dict = {}
             max_rows = 0
             for k in aktif_kortlar:
@@ -169,7 +168,6 @@ else:
                 if len(m_list) > max_rows:
                     max_rows = len(m_list)
 
-            # Kort başlıkları
             baslik_kolonlari = st.columns(len(aktif_kortlar))
             for idx, k in enumerate(aktif_kortlar):
                 with baslik_kolonlari[idx]:
@@ -177,7 +175,6 @@ else:
 
             st.markdown("<hr style='margin: 2px 0 10px 0;'>", unsafe_allow_html=True)
 
-            # Satır satır (aynı saat/sıra dizini) yan yana render etme
             for row_idx in range(max_rows):
                 cols = st.columns(len(aktif_kortlar))
                 for idx, k in enumerate(aktif_kortlar):
@@ -188,7 +185,6 @@ else:
                             durum = mac.get("Durum", "Baslamadi")
                             skor = mac.get("Skor", "-")
                             
-                            # Renk ve Durum Tanımları (Fosforlu yeşil ve Parlak Kırmızı)
                             if durum == "Oynaniyor":
                                 durum_str = "DEVAM"
                                 durum_style = "color: #00FF66; font-weight: bold;"
@@ -202,7 +198,6 @@ else:
                                 durum_style = "color: #888888;"
                                 skor_style = "color: #888888;"
 
-                            # Ultra kompakt kart tasarımı
                             card_html = f"""
                             <div style="border: 1px solid #444; border-radius: 4px; padding: 5px; margin-bottom: 4px; background-color: #1a1a1a; color: #e0e0e0; font-size: 11px; line-height: 1.1;">
                                 <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
@@ -219,7 +214,6 @@ else:
                             """
                             st.markdown(card_html, unsafe_allow_html=True)
                         else:
-                            # Boş slot (hizanın bozulmaması için boş kutu)
                             st.markdown("""
                             <div style="border: 1px dashed #222; border-radius: 4px; padding: 5px; margin-bottom: 4px; background-color: transparent; height: 75px;">
                             </div>
@@ -253,24 +247,3 @@ else:
                                 st.error(mesaj)
     else:
         st.info("Sistemde kayitli mac programi yok. Asagidan PDF yukleyin.")
-        yuklenen_pdf = st.file_uploader("Mac Programi Yukle", type="pdf")
-        if yuklenen_pdf:
-            with st.spinner("Yukleniyor..."):
-                tum_temiz_veriler = pd.DataFrame()
-                with pdfplumber.open(yuklenen_pdf) as pdf:
-                    for sayfa in pdf.pages:
-                        tablo = sayfa.extract_table()
-                        if tablo:
-                            df_ham = pd.DataFrame(tablo[1:], columns=tablo[0])
-                            if None in df_ham.columns:
-                                df_ham = df_ham.dropna(axis=1, how='all')
-                                df_ham.columns = [f"Kort {i+1}" for i in range(len(df_ham.columns))]
-                            df_temiz = ayarlari_ayikla(df_ham)
-                            if not df_temiz.empty:
-                                tum_temiz_veriler = pd.concat([tum_temiz_veriler, df_temiz], ignore_index=True)
-                if not tum_temiz_veriler.empty:
-                    st.dataframe(tum_temiz_veriler, use_container_width=True)
-                    if st.button("Ilk Kaydi Olustur"):
-                        basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
-                        if basarili:
-                            st.success("Basarili! Sayfayi yenileyin.")
