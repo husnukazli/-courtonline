@@ -93,7 +93,7 @@ if "bashakem_giris" not in st.session_state:
     st.session_state.bashakem_giris = False
 
 if "bashakem_sayfa" not in st.session_state:
-    st.session_state.bashakem_sayfa = "Akis"
+    st.session_state.bashakem_sayfa = "Akis"  # Varsayılan ekran ızgara takibi
 
 if not st.session_state.bashakem_giris:
     st.title("Bashakem Giris Ekrani")
@@ -124,18 +124,17 @@ else:
 
     st.divider()
 
-    # --- 1. SAYFA: KORT AKIŞI ---
+    # --- 1. SAYFA: KORT AKIŞI (VARSAYILAN) ---
     if st.session_state.bashakem_sayfa == "Akis":
         col_zoom1, _ = st.columns([2, 8])
         with col_zoom1:
-            zoom_seviyesi = st.slider("Gorunum Olcegi (%)", min_value=50, max_value=120, value=90, step=10)
+            zoom_seviyesi = st.slider("Gorunum Olcegi (%)", min_value=50, max_value=150, value=120, step=10)
 
         st.markdown(f"""
             <style>
             .stApp {{
                 zoom: {zoom_seviyesi}%;
             }}
-            /* Hover Pop-up Tooltip Tasarımı */
             .tooltip-container {{
                 position: relative;
                 display: block;
@@ -262,8 +261,26 @@ else:
             baslamayan = len(df_stat[df_stat["Durum"] == "Baslamadi"])
             oran = int((biten_mac / toplam_mac * 100)) if toplam_mac > 0 else 0
             
+            # Ortalama süre hesaplama (Kalıcı arşiv + aktif programdaki geçerli saatli biten maçlar dahil)
+            sureler = []
             istatistikler = githubdan_veri_getir("turnuva_istatistikleri.json")
-            sureler = istatistikler.get("sureler", []) if isinstance(istatistikler, dict) else []
+            if isinstance(istatistikler, dict) and "sureler" in istatistikler:
+                sureler.extend(istatistikler["sureler"])
+            
+            for _, row in df_stat.iterrows():
+                if row.get("Durum") == "Bitti":
+                    b_saat = row.get("Baslangic_Saati", "")
+                    bit_saat = row.get("Bitis_Saati", "")
+                    if b_saat and bit_saat and b_saat != "Secilmedi" and bit_saat != "Secilmedi":
+                        try:
+                            t1 = datetime.strptime(b_saat.strip(), "%H:%M")
+                            t2 = datetime.strptime(bit_saat.strip(), "%H:%M")
+                            diff = (t2 - t1).total_seconds() / 60
+                            if 0 < diff < 600:
+                                sureler.append(int(diff))
+                        except:
+                            pass
+
             ortalama_sure = int(sum(sureler) / len(sureler)) if sureler else 0
 
             st.markdown("### Turnuva İstatistikleri")
