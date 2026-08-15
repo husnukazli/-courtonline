@@ -13,10 +13,11 @@ st.write("Burada PDF yükleme ekranı ve tüm kortların anlık durumu görünec
 def github_a_kaydet(veri_listesi, dosya_yolu="mac_programi.json"):
     """Veriyi GitHub reposuna JSON olarak kaydeder."""
     try:
-        token = st.secrets["github"]["token"]
-        repo = st.secrets["github"]["repo"]
+        # BÜYÜK HARFLİ DEĞİŞİKLİKLERİ BURAYA EKLEDİK
+        token = st.secrets["GITHUB_TOKEN"]
+        repo = st.secrets["REPO_NAME"]
     except KeyError:
-        return False, "Hata: .streamlit/secrets.toml dosyasında github token veya repo bilgisi eksik!"
+        return False, "Hata: Streamlit Secrets (veya secrets.toml) içinde GITHUB_TOKEN veya REPO_NAME bulunamadı!"
 
     url = f"https://api.github.com/repos/{repo}/contents/{dosya_yolu}"
     headers = {
@@ -24,7 +25,7 @@ def github_a_kaydet(veri_listesi, dosya_yolu="mac_programi.json"):
         "Accept": "application/vnd.github.v3+json"
     }
     
-    # Dosya zaten var mı diye kontrol edip SHA kodunu alıyoruz (Güncelleme için zorunlu)
+    # Dosya zaten var mı diye kontrol edip SHA kodunu alıyoruz
     sha = None
     cevap_get = requests.get(url, headers=headers)
     if cevap_get.status_code == 200:
@@ -115,7 +116,6 @@ if yuklenen_pdf:
                 
                 st.subheader("📋 Temizlenmiş Maç Listesi")
                 
-                # İndeksi 1'den başlatma düzeltmesi burada
                 tum_temiz_veriler.index = tum_temiz_veriler.index + 1
                 
                 st.dataframe(tum_temiz_veriler, use_container_width=True)
@@ -125,7 +125,6 @@ if yuklenen_pdf:
                 
                 if st.button("✅ Programı Onayla ve GitHub'a Kaydet", type="primary"):
                     with st.spinner("GitHub'a kaydediliyor..."):
-                        # DataFrame'i sözlük (JSON) listesine çevir
                         kayit_verisi = tum_temiz_veriler.to_dict(orient="records")
                         
                         basarili_mi, mesaj = github_a_kaydet(kayit_verisi)
