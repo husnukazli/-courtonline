@@ -89,7 +89,6 @@ def ayarlari_ayikla(df):
                 })
     return pd.DataFrame(mac_listesi)
 
-# Skor stringinden kazananı tespit eden fonksiyon (1 veya 2 döner)
 def kazanan_kim(skor_str):
     if not skor_str or skor_str == "-":
         return None
@@ -117,7 +116,7 @@ if "bashakem_giris" not in st.session_state:
     st.session_state.bashakem_giris = False
 
 if "bashakem_sayfa" not in st.session_state:
-    st.session_state.bashakem_sayfa = "Akis"  # Varsayılan ekran ızgara takibi
+    st.session_state.bashakem_sayfa = "Akis"
 
 if not st.session_state.bashakem_giris:
     st.title("Bashakem Giris Ekrani")
@@ -158,6 +157,19 @@ else:
             <style>
             .stApp {{
                 zoom: {zoom_seviyesi}%;
+            }}
+            /* Mobilde kolonların alt alta yığılmasını engelle, yatay kaydırma (scroll) ver */
+            @media (max-width: 768px) {{
+                [data-testid="stHorizontalBlock"] {{
+                    flex-direction: row !important;
+                    flex-wrap: nowrap !important;
+                    overflow-x: auto !important;
+                    padding-bottom: 10px;
+                }}
+                [data-testid="column"] {{
+                    min-width: 170px !important;
+                    flex: 1 0 auto !important;
+                }}
             }}
             .tooltip-container {{
                 position: relative;
@@ -227,7 +239,6 @@ else:
                                 k_tercih = mac.get("Kura_Tercih", "-")
                                 s_tarafi = mac.get("Saha_Tarafi", "-")
                                 
-                                # Kazanan tespiti ve görsel stil ayarları
                                 kazanan = kazanan_kim(skor) if durum == "Bitti" else None
                                 if kazanan == 1:
                                     p1_style = "color: #ffffff; font-weight: bold;"
