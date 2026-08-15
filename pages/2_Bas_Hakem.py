@@ -84,6 +84,7 @@ def ayarlari_ayikla(df):
                     "Bitis_Saati": "",
                     "Kura_Kazanan": "",
                     "Kura_Tercih": "",
+                    "Saha_Tarafi": "",
                     "sure_islendi": False
                 })
     return pd.DataFrame(mac_listesi)
@@ -134,6 +135,33 @@ else:
             .stApp {{
                 zoom: {zoom_seviyesi}%;
             }}
+            /* Hover Pop-up Tooltip Tasarımı */
+            .tooltip-container {{
+                position: relative;
+                display: block;
+            }}
+            .tooltip-container .tooltip-text {{
+                visibility: hidden;
+                width: 200px;
+                background-color: #333;
+                color: #fff;
+                text-align: left;
+                border-radius: 6px;
+                padding: 8px;
+                position: absolute;
+                z-index: 100;
+                bottom: 105%;
+                left: 50%;
+                transform: translateX(-50%);
+                opacity: 0;
+                transition: opacity 0.3s;
+                font-size: 11px;
+                box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
+            }}
+            .tooltip-container:hover .tooltip-text {{
+                visibility: visible;
+                opacity: 1;
+            }}
             </style>
         """, unsafe_allow_html=True)
 
@@ -170,6 +198,11 @@ else:
                                 mac = m_list[row_idx]
                                 durum = mac.get("Durum", "Baslamadi")
                                 skor = mac.get("Skor", "-")
+                                b_saat = mac.get("Baslangic_Saati", "-")
+                                bit_saat = mac.get("Bitis_Saati", "-")
+                                k_kazanan = mac.get("Kura_Kazanan", "-")
+                                k_tercih = mac.get("Kura_Tercih", "-")
+                                s_tarafi = mac.get("Saha_Tarafi", "-")
                                 
                                 if durum == "Oynaniyor":
                                     durum_str = "DEVAM"
@@ -185,17 +218,26 @@ else:
                                     skor_style = "color: #888888; font-size: 11px;"
 
                                 card_html = f"""
-                                <div style="border: 1px solid #444; border-radius: 4px; padding: 6px; margin-bottom: 4px; background-color: #1a1a1a; color: #e0e0e0; font-size: 11px; line-height: 1.1;">
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-                                        <span style="font-weight: bold; color: #fff;">{mac['Saat']}</span>
-                                        <span style="{durum_style}">{durum_str}</span>
+                                <div class="tooltip-container">
+                                    <div style="border: 1px solid #444; border-radius: 4px; padding: 6px; margin-bottom: 4px; background-color: #1a1a1a; color: #e0e0e0; font-size: 11px; line-height: 1.1; cursor: pointer;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                                            <span style="font-weight: bold; color: #fff;">{mac['Saat']}</span>
+                                            <span style="{durum_style}">{durum_str}</span>
+                                        </div>
+                                        <div style="color: #999; font-size: 9px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{mac['Kategori']}</div>
+                                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px;">{mac['Oyuncu 1']}</div>
+                                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px;">{mac['Oyuncu 2']}</div>
+                                        <div style="margin-top: 4px; border-top: 1px dashed #333; padding-top: 3px; text-align: center;">
+                                            <span style="{skor_style}">Skor: {skor}</span>
+                                        </div>
                                     </div>
-                                    <div style="color: #999; font-size: 9px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{mac['Kategori']}</div>
-                                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px;">{mac['Oyuncu 1']}</div>
-                                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px;">{mac['Oyuncu 2']}</div>
-                                    <div style="margin-top: 4px; border-top: 1px dashed #333; padding-top: 3px; text-align: center;">
-                                        <span style="{skor_style}">Skor: {skor}</span>
-                                    </div>
+                                    <span class="tooltip-text">
+                                        <b>Mac Detaylari</b><br>
+                                        Baslama: {b_saat} | Bitis: {bit_saat}<br>
+                                        Kura Kazanan: {k_kazanan}<br>
+                                        Tercih: {k_tercih}<br>
+                                        Taraf: {s_tarafi}
+                                    </span>
                                 </div>
                                 """
                                 st.markdown(card_html, unsafe_allow_html=True)
@@ -207,11 +249,10 @@ else:
         else:
             st.info("Sistemde kayitli mac programi yok. Yonetim panelinden PDF yukleyebilirsiniz.")
 
-    # --- 2. SAYFA: YÖNETİM PANELİ VE KALICI İSTATİSTİKLER ---
+    # --- 2. SAYFA: YÖNETİM PANELİ VE İSTATİSTİKLER ---
     elif st.session_state.bashakem_sayfa == "Yonetim":
         st.subheader("Turnuva Yonetim ve İstatistik Paneli")
         
-        # Günlük program istatistikleri
         program_data = githubdan_veri_getir("mac_programi.json")
         if program_data:
             df_stat = pd.DataFrame(program_data)
@@ -221,7 +262,6 @@ else:
             baslamayan = len(df_stat[df_stat["Durum"] == "Baslamadi"])
             oran = int((biten_mac / toplam_mac * 100)) if toplam_mac > 0 else 0
             
-            # Kalıcı istatistik dosyasından tüm turnuva boyunca tamamlanan maçların ortalama süresini alıyoruz
             istatistikler = githubdan_veri_getir("turnuva_istatistikleri.json")
             sureler = istatistikler.get("sureler", []) if isinstance(istatistikler, dict) else []
             ortalama_sure = int(sum(sureler) / len(sureler)) if sureler else 0
@@ -243,7 +283,6 @@ else:
                 
             st.divider()
 
-        # Hakem Yönetimi
         st.markdown("### Hakem Yonetimi")
         kayitli_hakemler = githubdan_veri_getir("hakemler.json")
         if not isinstance(kayitli_hakemler, dict):
@@ -273,7 +312,6 @@ else:
 
         st.divider()
 
-        # Yeni Program PDF Yükleme
         st.markdown("### Yeni Program (PDF) Yükleme")
         yuklenen_pdf = st.file_uploader("PDF Sec", type="pdf")
         if yuklenen_pdf:
@@ -296,6 +334,6 @@ else:
                     if st.button("Onayla ve Mevcut Programın Üzerine Yaz"):
                         basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
                         if basarili:
-                            st.success("Yeni program kaydedildi! Kort akis sekmesine dönebilirsiniz.")
+                            st.success("Yeni program kaydedildi!")
                         else:
                             st.error(mesaj)
