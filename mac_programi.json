@@ -18,11 +18,11 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "TEOMAN USLU",
         "Oyuncu 2": "CANER TUNCER",
-        "Durum": "Baslamadi",
-        "Skor": NaN,
+        "Durum": "Oynaniyor",
+        "Skor": "0/1 0/0",
         "Baslangic_Saati": NaN,
         "Bitis_Saati": NaN,
-        "Kura_Kazanan": NaN,
+        "Kura_Kazanan": "TEOMAN USLU",
         "Kura_Tercih": NaN
     },
     {
