@@ -18,6 +18,7 @@ document.addEventListener('focusin', function(e) {
 });
 </script>
 <style>
+/* Klavye tetiklemesini engellemek için */
 input { caret-color: transparent !important; }
 div[data-baseweb="input"] input { height: 48px !important; font-size: 20px !important; font-weight: bold !important; text-align: center !important; }
 button[data-baseweb="button"] { height: 38px !important; width: 38px !important; }
@@ -86,8 +87,7 @@ def github_a_kaydet(veri_listesi, dosya_yolu):
 
 def skor_cozumle(skor_str):
     sets = {"s1_p1": 0, "s1_p2": 0, "s2_p1": 0, "s2_p2": 0, "s3_p1": 0, "s3_p2": 0}
-    if not skor_str or skor_str == "-":
-        return sets
+    if not skor_str or skor_str == "-": return sets
     try:
         parcalar = skor_str.split()
         for i, p in enumerate(parcalar):
@@ -145,6 +145,22 @@ else:
     program = githubdan_veri_getir("mac_programi.json")
     if program:
         df_maclar = pd.DataFrame(program)
+        
+        # --- VERİ TEMİZLİĞİ VE OTOMATİK SKOR DÜZELTMESİ ---
+        if "Skor" not in df_maclar.columns:
+            df_maclar["Skor"] = "-"
+            
+        for idx in df_maclar.index:
+            skor_val = str(df_maclar.loc[idx, "Skor"]).strip()
+            # None, NaN, null gibi istenmeyen metinleri temizle
+            if pd.isna(df_maclar.loc[idx, "Skor"]) or skor_val.lower() in ["none", "nan", "null", ""]:
+                skor_val = "-"
+            
+            # Oynanan maçta skor girilmediyse 0-0 ile başlat
+            if df_maclar.loc[idx, "Durum"] == "Oynaniyor" and skor_val == "-":
+                skor_val = "0/0 0/0"
+                
+            df_maclar.loc[idx, "Skor"] = skor_val
         
         # --- KURULUM PANELİ ---
         if st.session_state.hakem_mod == "kurulum":
@@ -215,9 +231,8 @@ else:
                     df_maclar.loc[gercek_idx, "Bitis_Saati"] = bit_str
                     df_maclar.loc[gercek_idx, "Son_Hakem"] = st.session_state.kullanici
 
-                    # Eğer maç 'Oynaniyor' durumuna alındıysa ve henüz skor girilmediyse skoru '0/0 0/0' yap
-                    mevcut_skor_kontrol = str(secilen_mac.get("Skor", "-")).strip()
-                    if yeni_durum == "Oynaniyor" and mevcut_skor_kontrol in ["-", "", "None"]:
+                    # Oynanıyora geçildiğinde skor kontrolü tetiklenecek şekilde kaydet 
+                    if yeni_durum == "Oynaniyor" and df_maclar.loc[gercek_idx, "Skor"] == "-":
                         df_maclar.loc[gercek_idx, "Skor"] = "0/0 0/0"
                     
                     basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
@@ -240,6 +255,7 @@ else:
                     st.markdown(f"""
                     <div style="background-color: #1a1a1a; border-left: 6px solid #00FF66; padding: 10px 14px; margin-top: 12px; border-radius: 6px;">
                         <span style="color: #ffffff; font-weight: bold;">{row['Kort'].upper()} | {row['Oyuncu 1']} vs {row['Oyuncu 2']}</span>
+                        <span style="float: right; color: #00FF66; font-weight: bold;">{row['Skor']}</span>
                     </div>
                     """, unsafe_allow_html=True)
                     
@@ -252,7 +268,7 @@ else:
                         yeni_d = st.selectbox("Durum Güncelle", durum_listesi_skor, index=d_idx, key=f"d_{idx}")
                         
                         kazanan = "Secilmedi"
-                        if yeni_d in ["Retired", "Walkover"]:
+                        if yeni_d in ["Retired", "Walkover", "Bitti"]:
                             kaz_ops = ["Secilmedi", row['Oyuncu 1'], row['Oyuncu 2']]
                             kaz_val = row.get("Kazanan", "Secilmedi")
                             k_idx = kaz_ops.index(kaz_val) if kaz_val in kaz_ops else 0
