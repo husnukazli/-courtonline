@@ -58,7 +58,9 @@ def resmi_ai_ile_oku(resim_dosyasi):
     try:
         # Gemini API Ayarları
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        model = genai.GenerativeModel('gemini-1.5-pro')
+        
+        # ÇÖZÜM NOKTASI: Model adı gemini-1.5-pro-latest veya gemini-1.5-flash olarak güncellendi.
+        model = genai.GenerativeModel('gemini-1.5-pro-latest')
         
         # Resmi Streamlit'ten PIL formatına çevir
         img = Image.open(resim_dosyasi)
