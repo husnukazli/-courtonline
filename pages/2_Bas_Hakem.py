@@ -131,14 +131,12 @@ def mac_suresi_hesapla(mac):
     try:
         t1 = datetime.strptime(b_saat.strip(), "%H:%M")
         
-        # Eğer bitiş saati varsa
         if bit_saat and bit_saat != "Secilmedi":
             t2 = datetime.strptime(bit_saat.strip(), "%H:%M")
             diff = int((t2 - t1).total_seconds() / 60)
             if diff > 0:
                 return f"{diff} dk (Tamamlandı)"
         
-        # Eğer maç devam ediyorsa Türkiye saatine göre anlık süre hesapla
         if durum == "Oynaniyor":
             TRT = timezone(timedelta(hours=3))
             simdi = datetime.now(TRT)
@@ -150,6 +148,46 @@ def mac_suresi_hesapla(mac):
     except:
         pass
     return None
+
+def tooltip_html_olustur(mac):
+    saat = mac.get('Saat', '-')
+    kategori = mac.get('Kategori', '-')
+    b_saat = mac.get('Baslangic_Saati', '')
+    bit_saat = mac.get('Bitis_Saati', '')
+    k_kazanan = mac.get('Kura_Kazanan', '')
+    k_tercih = mac.get('Kura_Tercih', '')
+    s_tarafi = mac.get('Saha_Tarafi', '')
+    son_hakem = mac.get('Son_Hakem', '')
+    
+    html = f'<b style="color: #00E5FF; font-size: 14px;">Maç Detayları</b><br>'
+    html += f'<b>Planlanan Saat:</b> <span style="color: #FFD700; font-weight: bold;">{saat}</span><br>'
+    html += f'<b>Kategori:</b> {kategori}'
+    
+    detaylar = []
+    if b_saat and b_saat != "Secilmedi":
+        detaylar.append(f'<b>Başlama:</b> <span style="color: #00FF66; font-weight: bold;">{b_saat}</span>')
+    if bit_saat and bit_saat != "Secilmedi":
+        detaylar.append(f'<b>Bitiş:</b> <span style="color: #FF1744; font-weight: bold;">{bit_saat}</span>')
+        
+    sure_metni = mac_suresi_hesapla(mac)
+    if sure_metni:
+        detaylar.append(f'<b>Maç Süresi:</b> <span style="color: #00E5FF; font-weight: bold;">{sure_metni}</span>')
+        
+    if k_kazanan and k_kazanan != "Secilmedi":
+        detaylar.append(f'<b>Kura Kazanan:</b> {k_kazanan}')
+    if k_tercih and k_tercih != "Secilmedi":
+        detaylar.append(f'<b>Tercih:</b> {k_tercih}')
+    if s_tarafi and s_tarafi != "Secilmedi":
+        detaylar.append(f'<b>Taraf:</b> {s_tarafi}')
+        
+    if detaylar:
+        html += '<hr style="margin: 6px 0; border-color: #444;">'
+        html += '<br>'.join(detaylar)
+        
+    if son_hakem and son_hakem != "-":
+        html += f'<div style="margin-top: 6px; border-top: 1px dashed #555; padding-top: 4px; color: #FF9100; font-weight: bold; font-size: 12px;">Aktif Hakem: {son_hakem}</div>'
+        
+    return html
 
 if "bashakem_giris" not in st.session_state:
     st.session_state.bashakem_giris = False
@@ -277,16 +315,7 @@ else:
                                 mac = m_list[row_idx]
                                 durum = mac.get("Durum", "Baslamadi")
                                 skor = mac.get("Skor", "-")
-                                b_saat = mac.get("Baslangic_Saati", "-")
-                                bit_saat = mac.get("Bitis_Saati", "-")
-                                k_kazanan = mac.get("Kura_Kazanan", "-")
-                                k_tercih = mac.get("Kura_Tercih", "-")
-                                s_tarafi = mac.get("Saha_Tarafi", "-")
-                                son_hakem = mac.get("Son_Hakem", "-")
                                 
-                                sure_metni = mac_suresi_hesapla(mac)
-                                sure_html = f"<b>Maç Süresi:</b> <span style='color: #00E5FF; font-weight: bold;'>{sure_metni}</span><br>" if sure_metni else ""
-
                                 kazanan = kazanan_kim(mac) if durum in ["Bitti", "Walkover", "Retired"] else None
                                 if kazanan == 1:
                                     p1_style = "color: #ffffff; font-weight: bold;"
@@ -321,6 +350,8 @@ else:
                                     durum_style = "color: #888888;"
                                     skor_style = "color: #888888; font-size: 11px;"
 
+                                tooltip_html = tooltip_html_olustur(mac)
+
                                 card_html = f"""
                                 <div class="tooltip-container">
                                     <div style="border: 1px solid #444; border-radius: 4px; padding: 6px; margin-bottom: 4px; background-color: #1a1a1a; color: #e0e0e0; font-size: 11px; line-height: 1.1; cursor: pointer;">
@@ -336,18 +367,7 @@ else:
                                         </div>
                                     </div>
                                     <span class="tooltip-text">
-                                        <b style="color: #00E5FF; font-size: 14px;">Maç Detayları</b><br>
-                                        <b>Planlanan Saat:</b> <span style="color: #FFD700; font-weight: bold;">{mac['Saat']}</span><br>
-                                        <b>Kategori:</b> {mac['Kategori']}<br>
-                                        <hr style="margin: 6px 0; border-color: #444;">
-                                        <b>Başlama:</b> <span style="color: #00FF66; font-weight: bold;">{b_saat}</span> | <b>Bitiş:</b> <span style="color: #FF1744; font-weight: bold;">{bit_saat}</span><br>
-                                        {sure_html}
-                                        <b>Kura Kazanan:</b> {k_kazanan}<br>
-                                        <b>Tercih:</b> {k_tercih}<br>
-                                        <b>Taraf:</b> {s_tarafi}<br>
-                                        <div style="margin-top: 6px; border-top: 1px dashed #555; padding-top: 4px; color: #FF9100; font-weight: bold; font-size: 12px;">
-                                            İşlem Yapan Hakem: {son_hakem}
-                                        </div>
+                                        {tooltip_html}
                                     </span>
                                 </div>
                                 """
