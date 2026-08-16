@@ -7,7 +7,7 @@ import json
 import re
 
 st.set_page_config(page_title="PDF Program Yükleme", layout="wide")
-st.title("📂 PDF Maç Programı Yükleme ve Format Ayarları")
+st.title("📂 PDF Maç Programı Yükleme")
 
 def githubdan_veri_getir(dosya_yolu):
     try:
@@ -51,21 +51,23 @@ def github_a_kaydet(veri, dosya_yolu):
     except Exception as e:
         return False, str(e)
 
-def pdf_programi_oku_koordinat(pdf_file):
+def pdf_programi_oku_guclu(pdf_file):
     tum_maclar = []
     try:
         with pdfplumber.open(pdf_file) as pdf:
-            for sayfa_no, sayfa in enumerate(pdf.pages):
+            for sayfa in pdf.pages:
                 words = sayfa.extract_words()
-                if not words: continue
+                if not words: 
+                    continue
 
-                rows = []
+                # Kelimeleri dikey hizaya (satırlara) göre grupla
                 words.sort(key=lambda w: w['top'])
+                rows = []
                 current_row = []
                 current_top = words[0]['top']
 
                 for w in words:
-                    if abs(w['top'] - current_top) < 4:
+                    if abs(w['top'] - current_top) < 6:
                         current_row.append(w)
                     else:
                         rows.append(current_row)
@@ -74,64 +76,53 @@ def pdf_programi_oku_koordinat(pdf_file):
                 if current_row:
                     rows.append(current_row)
 
-                court_keywords = ["TOPRAK", "SERT", "KORT", "MERKEZ", "KAPALI", "COURT", "AÇIK", "ACIK"]
+                court_keywords = ["KORT", "KAPALI", "AÇIK", "TOPRAK", "SERT", "MERKEZ", "COURT"]
                 header_row_idx = -1
                 
                 for i, row in enumerate(rows):
                     text_in_row = " ".join([w['text'].upper() for w in row])
                     if any(kw in text_in_row for kw in court_keywords):
-                        if any(char.isdigit() for char in text_in_row):
-                            header_row_idx = i
-                            break
+                        header_row_idx = i
+                        break
 
-                if header_row_idx == -1: continue
+                if header_row_idx == -1:
+                    continue
 
                 header_row = rows[header_row_idx]
                 header_row.sort(key=lambda w: w['x0'])
 
+                # Sütun başlıklarını geniş aralık eşiği (35px) ile grupla
                 columns = []
-                current_col_text = header_row[0]['text']
-                current_col_x0 = header_row[0]['x0']
-                current_col_x1 = header_row[0]['x1']
+                curr_col_name = header_row[0]['text']
+                curr_x0 = header_row[0]['x0']
+                curr_x1 = header_row[0]['x1']
 
                 for w in header_row[1:]:
-                    if w['x0'] - current_col_x1 < 15:
-                        current_col_text += " " + w['text']
-                        current_col_x1 = w['x1']
+                    if (w['x0'] - curr_x1) < 35:
+                        curr_col_name += " " + w['text']
+                        curr_x1 = w['x1']
                     else:
-                        columns.append({"name": current_col_text, "x0": current_col_x0, "x1": current_col_x1})
-                        current_col_text = w['text']
-                        current_col_x0 = w['x0']
-                        current_col_x1 = w['x1']
-                columns.append({"name": current_col_text, "x0": current_col_x0, "x1": current_col_x1})
+                        columns.append({"name": curr_col_name.strip(), "x0": curr_x0, "x1": curr_x1})
+                        curr_col_name = w['text']
+                        curr_x0 = w['x0']
+                        curr_x1 = w['x1']
+                columns.append({"name": curr_col_name.strip(), "x0": curr_x0, "x1": curr_x1})
 
+                # Sütun sınırlarını belirle
                 for i in range(len(columns)):
-                    if i < len(columns) - 1:
-                        columns[i]['limit_x'] = (columns[i]['x1'] + columns[i+1]['x0']) / 2
-                    else:
-                        columns[i]['limit_x'] = 9999
+                    min_x = 0 if i == 0 else (columns[i-1]['x1'] + columns[i]['x0']) / 2
+                    max_x = 9999 if i == len(columns) - 1 else (columns[i]['x1'] + columns[i+1]['x0']) / 2
+                    columns[i]['min_x'] = min_x
+                    columns[i]['max_x'] = max_x
 
-                data_words = []
-                for row in rows[header_row_idx+1:]:
-                    data_words.extend(row)
+                header_bottom = max([w['bottom'] for w in header_row])
+                data_words = [w for w in words if w['top'] >= header_bottom - 2]
 
-                col_data = {col['name']: [] for col in columns}
-
-                for w in data_words:
-                    center_x = (w['x0'] + w['x1']) / 2
-                    assigned = False
-                    for col in columns:
-                        if center_x < col['limit_x']:
-                            col_data[col['name']].append(w)
-                            assigned = True
-                            break
-                    if not assigned and columns:
-                        col_data[columns[-1]['name']].append(w)
-
+                # Her kort sütununun altındaki maçları parse et
                 for col in columns:
-                    c_name = col['name']
-                    c_words = col_data[c_name]
-                    if not c_words: continue
+                    c_words = [w for w in data_words if col['min_x'] <= ((w['x0'] + w['x1']) / 2) < col['max_x']]
+                    if not c_words:
+                        continue
 
                     c_words.sort(key=lambda w: w['top'])
                     c_lines = []
@@ -139,7 +130,7 @@ def pdf_programi_oku_koordinat(pdf_file):
                     curr_top = c_words[0]['top']
 
                     for w in c_words:
-                        if abs(w['top'] - curr_top) < 4:
+                        if abs(w['top'] - current_top) < 6:
                             curr_line.append(w)
                         else:
                             curr_line.sort(key=lambda x: x['x0'])
@@ -150,73 +141,66 @@ def pdf_programi_oku_koordinat(pdf_file):
                         curr_line.sort(key=lambda x: x['x0'])
                         c_lines.append(" ".join([x['text'] for x in curr_line]))
 
+                    # Saat satırlarına göre maç bloklarına böl
                     match_blocks = []
-                    current_match = []
-
+                    curr_block = []
                     for line in c_lines:
-                        if re.search(r'\d{2}:\d{2}', line) or "TAKİP" in line.upper():
-                            if current_match:
-                                match_blocks.append(current_match)
-                            current_match = [line]
+                        if re.search(r'\b\d{1,2}:\d{2}\b', line) or "TAKİP" in line.upper():
+                            if curr_block:
+                                match_blocks.append(curr_block)
+                            curr_block = [line]
                         else:
-                            if current_match:
-                                current_match.append(line)
-
-                    if current_match:
-                        match_blocks.append(current_match)
+                            if curr_block:
+                                curr_block.append(line)
+                    if curr_block:
+                        match_blocks.append(curr_block)
 
                     for block in match_blocks:
-                        if not block: continue
+                        saat_match = re.search(r'\b\d{1,2}:\d{2}\b', block[0])
+                        saat = saat_match.group() if saat_match else block[0].split()[0]
 
-                        saat_line = block[0]
-                        saat_match = re.search(r'\d{2}:\d{2}', saat_line)
-                        saat = saat_match.group() if saat_match else saat_line.split()[0] if saat_line else ""
+                        # Kulüp isimlerini (parantezli satırları) temizle
+                        details = [l.strip() for l in block[1:] if not l.strip().startswith('(') and not l.strip().endswith(')') and l.strip()]
+                        if not details:
+                            continue
 
-                        details = block[1:]
-                        details = [d for d in details if not d.strip().startswith('(') and d.strip()]
+                        kategori_keywords = ["YAŞ", "YAS", "KADIN", "ERKEK", "BÜYÜK", "BUYUK", "TEK", "ÇİFT"]
+                        kat_idx = -1
+                        kategori = "Genel"
 
-                        if not details: continue
-
-                        oyuncu1, oyuncu2, kategori = "Bilinmiyor", "Bilinmiyor", "Genel"
-
-                        kat_index = -1
-                        for idx, p in enumerate(details):
-                            p_upper = p.upper()
-                            if "YAŞ" in p_upper or "BÜYÜK" in p_upper or "KADIN" in p_upper or "ERKEK" in p_upper:
-                                kat_index = idx
-                                kategori = p
+                        for idx, item in enumerate(details):
+                            if any(kw in item.upper() for kw in kategori_keywords):
+                                kat_idx = idx
+                                kategori = item
                                 break
 
-                        if kat_index != -1:
-                            p1_kismi = details[:kat_index]
-                            p2_kismi = details[kat_index+1:]
-                            oyuncu1 = " ".join(p1_kismi) if p1_kismi else "Bilinmiyor 1"
-                            oyuncu2 = " ".join(p2_kismi) if p2_kismi else "Bilinmiyor 2"
+                        if kat_idx != -1:
+                            oyuncu1 = " ".join(details[:kat_idx])
+                            oyuncu2 = " ".join(details[kat_idx+1:])
                         else:
                             if len(details) >= 3:
                                 oyuncu1, kategori, oyuncu2 = details[0], details[1], details[2]
                             elif len(details) == 2:
-                                oyuncu1, kategori = details[0], details[1]
-                            elif len(details) == 1:
-                                oyuncu1 = details[0]
+                                oyuncu1, oyuncu2 = details[0], details[1]
+                            else:
+                                oyuncu1, oyuncu2 = details[0], "Bilinmiyor"
 
-                        if not oyuncu1.strip() and not oyuncu2.strip(): continue
-
-                        tum_maclar.append({
-                            "Kort": c_name,
-                            "Saat": saat,
-                            "Oyuncu 1": oyuncu1.strip(),
-                            "Oyuncu 2": oyuncu2.strip(),
-                            "Kategori": kategori.strip()
-                        })
+                        if oyuncu1.strip() or oyuncu2.strip():
+                            tum_maclar.append({
+                                "Kort": col['name'],
+                                "Saat": saat,
+                                "Oyuncu 1": oyuncu1.strip(),
+                                "Oyuncu 2": oyuncu2.strip(),
+                                "Kategori": kategori.strip()
+                            })
 
         if not tum_maclar:
-            return None, "Hata: PDF'te maç okunamadı."
-        df = pd.DataFrame(tum_maclar)
-        return df, "Başarılı"
+            return None, "PDF okundu ancak eşleşen maç bulunamadı."
+        return pd.DataFrame(tum_maclar), "Başarılı"
     except Exception as e:
         return None, f"PDF Okuma Hatası: {e}"
 
+# --- STREAMLIT ARAYÜZÜ ---
 FORMAT_SECENEKLERI = [
     "Normal (6) + 10 Puanlık Maç Tie-Break", 
     "Normal (6) + 3. Set Tam Oynanır", 
@@ -228,36 +212,31 @@ FORMAT_SECENEKLERI = [
 yuklenen_pdf = st.file_uploader("TTF Maç Programı PDF Dosyasını Yükleyin", type=["pdf"])
 
 if yuklenen_pdf is not None:
-    with st.spinner("🚀 Koordinat Bazlı TTF Yapay Zeka Motoru Çalışıyor..."):
-        df, mesaj = pdf_programi_oku_koordinat(yuklenen_pdf)
+    with st.spinner("Maç programı ayrıştırılıyor..."):
+        df, mesaj = pdf_programi_oku_guclu(yuklenen_pdf)
     
     if df is not None:
-        st.success(f"PDF başarıyla okundu! Toplam {len(df)} maç tespit edildi.")
-        bulunan_kortlar = df['Kort'].unique().tolist()
-        st.info(f"📍 **Tespit Edilen Kortlar ({len(bulunan_kortlar)}):** {', '.join(bulunan_kortlar)}")
-        
-        with st.expander("PDF'ten Çekilen ve Yapılandırılan Maç Listesini Gör"):
-            st.dataframe(df)
+        st.success(f"Program başarıyla okundu! Toplam {len(df)} maç listelendi.")
+        st.dataframe(df, use_container_width=True)
         
         st.divider()
         st.subheader("⚙️ Kategori ve Format Eşleştirme")
         
-        kategori_sutunu = "Kategori"
-        benzersiz_kategoriler = df[kategori_sutunu].unique()
+        benzersiz_kategoriler = df["Kategori"].unique()
         hafiza = githubdan_veri_getir("kategori_format_hafizasi.json") or {}
         yeni_hafiza = {}
         
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown("**Tespit Edilen Yaş/Grup Kategorisi**")
+            st.markdown("**Turnuva Kategorisi**")
         with col2:
-            st.markdown("**Uygulanacak Skor Formatı (Kurallar)**")
+            st.markdown("**Skor Formatı**")
             
         for i, kat in enumerate(benzersiz_kategoriler):
             if not kat or kat == "Genel": continue
             c1, c2 = st.columns(2)
             with c1:
-                st.markdown(f"<div style='padding-top: 10px; font-size: 18px;'>🎾 <b>{kat}</b></div>", unsafe_allow_html=True)
+                st.markdown(f"🎾 **{kat}**")
             with c2:
                 eski_secim = hafiza.get(kat, FORMAT_SECENEKLERI[0])
                 idx = FORMAT_SECENEKLERI.index(eski_secim) if eski_secim in FORMAT_SECENEKLERI else 0
@@ -267,8 +246,7 @@ if yuklenen_pdf is not None:
         st.divider()
         
         if st.button("✅ Programı Onayla ve Kort Hakemlerine Gönder", type="primary", use_container_width=True):
-            df["Skor_Formati"] = df[kategori_sutunu].map(yeni_hafiza)
-            df["Skor_Formati"] = df["Skor_Formati"].fillna(FORMAT_SECENEKLERI[0])
+            df["Skor_Formati"] = df["Kategori"].map(yeni_hafiza).fillna(FORMAT_SECENEKLERI[0])
             df["Durum"] = "Baslamadi"
             df["Skor"] = "-"
             df["Kura_Kazanan"] = "Secilmedi"
@@ -283,7 +261,7 @@ if yuklenen_pdf is not None:
             basarili_hafiza, msg_hafiza = github_a_kaydet(yeni_hafiza, "kategori_format_hafizasi.json")
             
             if basarili_mac and basarili_hafiza:
-                st.success("🎉 Maç programı başarıyla yüklendi!")
+                st.success("🎉 Maç programı sisteme yüklendi!")
                 st.balloons()
             else:
                 if not basarili_mac: st.error(f"Hata: {msg_mac}")
