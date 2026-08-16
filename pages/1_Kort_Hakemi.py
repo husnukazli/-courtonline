@@ -69,7 +69,9 @@ def skor_cozumle(skor_str):
 
 def set_skoru_gecerli_mi(p1, p2, durum):
     if p1 == 0 and p2 == 0: return True
-    if durum not in ["Bitti"]: return True
+    # Sadece durum "Bitti" ise tam set bitiş kurallarını uygula. Diğer durumlarda (Oynaniyor, Retired, Walkover) yarım skorlara izin ver.
+    if durum != "Bitti": return True
+    
     valid_completed = [
         (6,0),(6,1),(6,2),(6,3),(6,4),
         (0,6),(1,6),(2,6),(3,6),(4,6),
@@ -150,7 +152,6 @@ else:
                 durum_ops = ["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"]
                 yeni_durum = st.selectbox("Maç Durumu", durum_ops, index=durum_ops.index(mevcut_durum) if mevcut_durum in durum_ops else 0, key=f"kurulum_durum_{gercek_idx}")
                 
-                # Walkover veya Retired durumunda kazanan seçimi
                 kazanan_secim = "Secilmedi"
                 if yeni_durum in ["Walkover", "Retired"]:
                     kaz_ops = ["Secilmedi", p1_isim, p2_isim]
@@ -196,7 +197,7 @@ else:
             else:
                 st.info("Bu kortta maç bulunmuyor.")
 
-        # MOD 2: SKOR GİR (AKTİF MAÇLAR - KORT SEÇMEDEN ALT ALTA LİSTE VE BELİRGİN KORT NUMARALARI)
+        # MOD 2: SKOR GİR (AKTİF MAÇLAR)
         elif st.session_state.hakem_mod == "skor":
             st.subheader("Aktif Maçlar Skor Listesi")
             aktif_maclar = df_maclar[df_maclar["Durum"] == "Oynaniyor"]
@@ -270,7 +271,7 @@ else:
                                 if s3_p1 > 0 or s3_p2 > 0: skor_metni += f" {s3_p1}/{s3_p2}"
                                 
                                 b_saat_str = row.get("Baslangic_Saati", "")
-                                bit_saat_str = bitis_saati if bitis_saati != "Secilmedi" else ""
+                                bit_saat_str = bitis_saati if 'bitis_saati' in locals() and bitis_saati != "Secilmedi" else ""
                                 
                                 if yeni_durum in ["Bitti", "Walkover", "Retired"] and not row.get("sure_islendi", False):
                                     if b_saat_str and bit_saat_str:
