@@ -108,15 +108,15 @@
         "Oyuncu 2": "ÇINAR TEPE",
         "Kategori": "Erkek 9 Yaş T",
         "Skor_Formati": "2 Kısa Set, 3. Set 10 Puanlık Maç Tie-Break",
-        "Durum": "Oynaniyor",
-        "Skor": "-",
+        "Durum": "Walkover",
+        "Skor": "0/0 0/0 0/0",
         "Kura_Kazanan": "ALI DEMIR KEF",
         "Kura_Tercih": "Servis",
         "Saha_Tarafi": "Secilmedi",
         "Baslangic_Saati": "11:00",
-        "Bitis_Saati": "11:20",
+        "Bitis_Saati": "21:10",
         "Son_Hakem": "CANAN ÇAPLIK",
-        "Kazanan": "Secilmedi"
+        "Kazanan": "ALI DEMIR KEF"
     },
     {
         "Kort": "KAPALI KORT 3",
