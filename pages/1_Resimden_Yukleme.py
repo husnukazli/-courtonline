@@ -55,8 +55,8 @@ def github_a_kaydet(veri, dosya_yolu):
 def resmi_ai_ile_oku(resim_dosyasi):
     """Görüntüyü Anthropic Claude API'sine gönderip JSON formatında maç listesi alır."""
     try:
-        # Resmi Base64 formatına çevir
-        resim_bytes = resim_dosyasi.read()
+        # Resmi Streamlit'in UploadedFile formatından güvenli şekilde byte olarak al
+        resim_bytes = resim_dosyasi.getvalue()
         resim_b64 = base64.b64encode(resim_bytes).decode("utf-8")
         
         # Dosya tipini belirle
@@ -64,7 +64,7 @@ def resmi_ai_ile_oku(resim_dosyasi):
         if resim_dosyasi.name.lower().endswith(".png"):
             media_type = "image/png"
             
-        # Claude API'ye bağlan (secrets.toml içinde ANTHROPIC_API_KEY olmalı)
+        # Claude API'ye bağlan
         client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
         
         prompt = """
@@ -107,7 +107,7 @@ def resmi_ai_ile_oku(resim_dosyasi):
         # Yanıtı temizle ve JSON'a çevir
         json_metni = response.content[0].text.strip()
         
-        # Eğer Claude fazladan markdown (```json ... ```) eklediyse temizle
+        # Eğer Claude fazladan markdown eklediyse temizle
         if json_metni.startswith("```json"):
             json_metni = json_metni[7:-3]
         elif json_metni.startswith("```"):
@@ -132,7 +132,8 @@ FORMAT_SECENEKLERI = [
 yuklenen_resim = st.file_uploader("Maç Programının Ekran Görüntüsünü (PNG/JPG) Yükleyin", type=["png", "jpg", "jpeg"])
 
 if yuklenen_resim is not None:
-    st.image(yuklenen_resim, caption="Yüklenen Tablo", use_column_width=True)
+    # use_column_width DEĞİL, use_container_width kullanılmalı
+    st.image(yuklenen_resim, caption="Yüklenen Tablo", use_container_width=True)
     
     if st.button("🤖 Yapay Zeka ile Tabloyu Çözümle", type="primary"):
         with st.spinner("Claude 3.5 Sonnet tabloyu piksel piksel inceliyor... Lütfen bekleyin."):
@@ -200,7 +201,7 @@ if "temp_df" in st.session_state:
         if basarili_mac and basarili_hafiza:
             st.success("🎉 Maç programı sisteme başarıyla yüklendi!")
             st.balloons()
-            del st.session_state.temp_df # İşlem bitince belleği temizle
+            del st.session_state.temp_df
         else:
             if not basarili_mac: st.error(f"Maç programı kaydedilirken hata: {msg_mac}")
             if not basarili_hafiza: st.error(f"Hafıza kaydedilirken hata: {msg_hafiza}")
