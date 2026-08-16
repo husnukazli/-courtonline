@@ -214,6 +214,11 @@ else:
                     df_maclar.loc[gercek_idx, "Baslangic_Saati"] = b_str
                     df_maclar.loc[gercek_idx, "Bitis_Saati"] = bit_str
                     df_maclar.loc[gercek_idx, "Son_Hakem"] = st.session_state.kullanici
+
+                    # Eğer maç 'Oynaniyor' durumuna alındıysa ve henüz skor girilmediyse skoru '0/0 0/0' yap
+                    mevcut_skor_kontrol = str(secilen_mac.get("Skor", "-")).strip()
+                    if yeni_durum == "Oynaniyor" and mevcut_skor_kontrol in ["-", "", "None"]:
+                        df_maclar.loc[gercek_idx, "Skor"] = "0/0 0/0"
                     
                     basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
                     if basarili:
