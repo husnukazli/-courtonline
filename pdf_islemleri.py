@@ -51,161 +51,103 @@ def github_a_kaydet(veri, dosya_yolu):
     except Exception as e:
         return False, str(e)
 
-def pdf_programi_oku(pdf_file):
+def hucreyi_ayristir(hucre_metni, kort_adi):
+    if not hucre_metni or not str(hucre_metni).strip():
+        return None
+        
+    satirlar = [s.strip() for s in str(hucre_metni).split('\n') if s.strip()]
+    if not satirlar:
+        return None
+        
+    # Saat tespiti
+    saat_match = re.search(r'\b\d{1,2}:\d{2}\b', satirlar[0])
+    saat = saat_match.group() if saat_match else satirlar[0].split()[0]
+    
+    # Kulüp isimlerini (parantezli satırları) temizle
+    detaylar = [s for s in satirlar[1:] if not (s.startswith('(') and s.endswith(')'))]
+    if not detaylar:
+        return None
+        
+    kategori_keywords = ["YAŞ", "YAS", "KADIN", "ERKEK", "BÜYÜK", "BUYUK", "TEK", "ÇİFT"]
+    kat_idx = -1
+    kategori = "Genel"
+    
+    for idx, item in enumerate(detaylar):
+        if any(kw in item.upper() for kw in kategori_keywords):
+            kat_idx = idx
+            kategori = item
+            break
+            
+    if kat_idx != -1:
+        oyuncu1 = " ".join(detaylar[:kat_idx])
+        oyuncu2 = " ".join(detaylar[kat_idx+1:])
+    else:
+        if len(detaylar) >= 3:
+            oyuncu1, kategori, oyuncu2 = detaylar[0], detaylar[1], detaylar[2]
+        elif len(detaylar) == 2:
+            oyuncu1, oyuncu2 = detaylar[0], detaylar[1]
+        else:
+            oyuncu1, oyuncu2 = detaylar[0], "Bilinmiyor"
+            
+    if oyuncu1.strip() or oyuncu2.strip():
+        return {
+            "Kort": kort_adi,
+            "Saat": saat,
+            "Oyuncu 1": oyuncu1.strip(),
+            "Oyuncu 2": oyuncu2.strip(),
+            "Kategori": kategori.strip()
+        }
+    return None
+
+def pdf_programi_oku_tablo(pdf_file):
     tum_maclar = []
-    ham_metin_log = []
     try:
         with pdfplumber.open(pdf_file) as pdf:
-            for sayfa_idx, sayfa in enumerate(pdf.pages):
-                words = sayfa.extract_words()
-                if not words:
-                    continue
-
-                ham_metin_log.append(f"--- Sayfa {sayfa_idx + 1} ({len(words)} kelime bulundu) ---")
-
-                # Kelimeleri satırlara grupla
-                words.sort(key=lambda w: w['top'])
-                rows = []
-                current_row = []
-                current_top = words[0]['top']
-
-                for w in words:
-                    if abs(w['top'] - current_top) < 6:
-                        current_row.append(w)
-                    else:
-                        rows.append(current_row)
-                        current_row = [w]
-                        current_top = w['top']
-                if current_row:
-                    rows.append(current_row)
-
-                # Kort başlık satırını bul
-                court_keywords = ["KORT", "KAPALI", "AÇIK", "TOPRAK", "SERT", "MERKEZ", "COURT"]
-                header_row_idx = -1
+            for sayfa in pdf.pages:
+                tablolar = sayfa.extract_tables()
+                if not tablolar:
+                    tek_tablo = sayfa.extract_table()
+                    if tek_tablo:
+                        tablolar = [tek_tablo]
                 
-                for i, row in enumerate(rows):
-                    text_in_row = " ".join([w['text'].upper() for w in row])
-                    if any(kw in text_in_row for kw in court_keywords):
-                        header_row_idx = i
-                        break
-
-                if header_row_idx == -1:
+                if not tablolar:
                     continue
 
-                header_row = rows[header_row_idx]
-                header_row.sort(key=lambda w: w['x0'])
-
-                # Sütunları grupla
-                columns = []
-                curr_col_name = header_row[0]['text']
-                curr_x0 = header_row[0]['x0']
-                curr_x1 = header_row[0]['x1']
-
-                for w in header_row[1:]:
-                    if (w['x0'] - curr_x1) < 35:
-                        curr_col_name += " " + w['text']
-                        curr_x1 = w['x1']
-                    else:
-                        columns.append({"name": curr_col_name.strip(), "x0": curr_x0, "x1": curr_x1})
-                        curr_col_name = w['text']
-                        curr_x0 = w['x0']
-                        curr_x1 = w['x1']
-                columns.append({"name": curr_col_name.strip(), "x0": curr_x0, "x1": curr_x1})
-
-                # Sütun sınırları
-                for i in range(len(columns)):
-                    min_x = 0 if i == 0 else (columns[i-1]['x1'] + columns[i]['x0']) / 2
-                    max_x = 9999 if i == len(columns) - 1 else (columns[i]['x1'] + columns[i+1]['x0']) / 2
-                    columns[i]['min_x'] = min_x
-                    columns[i]['max_x'] = max_x
-
-                header_bottom = max([w['bottom'] for w in header_row])
-                data_words = [w for w in words if w['top'] >= header_bottom - 2]
-
-                # Sütun bazında maçları çıkar
-                for col in columns:
-                    c_words = [w for w in data_words if col['min_x'] <= ((w['x0'] + w['x1']) / 2) < col['max_x']]
-                    if not c_words:
+                for tablo in tablolar:
+                    if not tablo or len(tablo) < 2:
                         continue
+                    
+                    court_keywords = ["KORT", "KAPALI", "AÇIK", "TOPRAK", "SERT", "MERKEZ", "COURT"]
+                    header_idx = -1
+                    
+                    # Başlık satırını tespit et
+                    for r_idx, row in enumerate(tablo):
+                        row_str = " ".join([str(c) for c in row if c]).upper()
+                        if any(kw in row_str for kw in court_keywords):
+                            header_idx = r_idx
+                            break
+                    
+                    if header_idx == -1:
+                        header_idx = 0
 
-                    c_words.sort(key=lambda w: w['top'])
-                    c_lines = []
-                    curr_line = []
-                    curr_top = c_words[0]['top']
-
-                    for w in c_words:
-                        # HATA DÜZELTİLDİ: curr_top kontrolü ve güncellemesi
-                        if abs(w['top'] - curr_top) < 6:
-                            curr_line.append(w)
-                        else:
-                            curr_line.sort(key=lambda x: x['x0'])
-                            c_lines.append(" ".join([x['text'] for x in curr_line]))
-                            curr_line = [w]
-                            curr_top = w['top']
-                    if curr_line:
-                        curr_line.sort(key=lambda x: x['x0'])
-                        c_lines.append(" ".join([x['text'] for x in curr_line]))
-
-                    # Blok ayrıştırma
-                    match_blocks = []
-                    curr_block = []
-                    for line in c_lines:
-                        if re.search(r'\b\d{1,2}:\d{2}\b', line) or "TAKİP" in line.upper():
-                            if curr_block:
-                                match_blocks.append(curr_block)
-                            curr_block = [line]
-                        else:
-                            if curr_block:
-                                curr_block.append(line)
-                    if curr_block:
-                        match_blocks.append(curr_block)
-
-                    for block in match_blocks:
-                        saat_match = re.search(r'\b\d{1,2}:\d{2}\b', block[0])
-                        saat = saat_match.group() if saat_match else block[0].split()[0]
-
-                        # Parantezli kulüp satırlarını ele
-                        details = [l.strip() for l in block[1:] if not l.strip().startswith('(') and not l.strip().endswith(')') and l.strip()]
-                        if not details:
-                            continue
-
-                        kategori_keywords = ["YAŞ", "YAS", "KADIN", "ERKEK", "BÜYÜK", "BUYUK", "TEK", "ÇİFT"]
-                        kat_idx = -1
-                        kategori = "Genel"
-
-                        for idx, item in enumerate(details):
-                            if any(kw in item.upper() for kw in kategori_keywords):
-                                kat_idx = idx
-                                kategori = item
-                                break
-
-                        if kat_idx != -1:
-                            oyuncu1 = " ".join(details[:kat_idx])
-                            oyuncu2 = " ".join(details[kat_idx+1:])
-                        else:
-                            if len(details) >= 3:
-                                oyuncu1, kategori, oyuncu2 = details[0], details[1], details[2]
-                            elif len(details) == 2:
-                                oyuncu1, oyuncu2 = details[0], details[1]
-                            else:
-                                oyuncu1, oyuncu2 = details[0], "Bilinmiyor"
-
-                        if oyuncu1.strip() or oyuncu2.strip():
-                            tum_maclar.append({
-                                "Kort": col['name'],
-                                "Saat": saat,
-                                "Oyuncu 1": oyuncu1.strip(),
-                                "Oyuncu 2": oyuncu2.strip(),
-                                "Kategori": kategori.strip()
-                            })
+                    headers = [str(c).replace('\n', ' ').strip() if c else f"Kort {i+1}" for i, c in enumerate(tablo[header_idx])]
+                    
+                    # Hücrelerdeki maçları tara
+                    for row in tablo[header_idx+1:]:
+                        for col_idx, cell in enumerate(row):
+                            if col_idx < len(headers) and cell:
+                                kort_adi = headers[col_idx]
+                                mac = hucreyi_ayristir(cell, kort_adi)
+                                if mac:
+                                    tum_maclar.append(mac)
 
         if not tum_maclar:
-            return None, "PDF okundu fakat maçlar tablosuna dönüştürülemedi.", "\n".join(ham_metin_log)
-        return pd.DataFrame(tum_maclar), "Başarılı", "\n".join(ham_metin_log)
+            return None, "PDF tablosunda maç hücresi bulunamadı."
+        return pd.DataFrame(tum_maclar), "Başarılı"
     except Exception as e:
-        return None, f"PDF Okuma Hatası: {e}", "\n".join(ham_metin_log)
+        return None, f"PDF Okuma Hatası: {e}"
 
-# --- ARAYÜZ ---
+# --- STREAMLIT ARAYÜZÜ ---
 FORMAT_SECENEKLERI = [
     "Normal (6) + 10 Puanlık Maç Tie-Break", 
     "Normal (6) + 3. Set Tam Oynanır", 
@@ -217,8 +159,8 @@ FORMAT_SECENEKLERI = [
 yuklenen_pdf = st.file_uploader("TTF Maç Programı PDF Dosyasını Yükleyin", type=["pdf"])
 
 if yuklenen_pdf is not None:
-    with st.spinner("Maç programı taranıyor..."):
-        df, mesaj, loglar = pdf_programi_oku(yuklenen_pdf)
+    with st.spinner("Tablo yapısı taranıyor..."):
+        df, mesaj = pdf_programi_oku_tablo(yuklenen_pdf)
     
     if df is not None:
         st.success(f"Program başarıyla okundu! Toplam {len(df)} maç listelendi.")
@@ -273,5 +215,3 @@ if yuklenen_pdf is not None:
                 if not basarili_hafiza: st.error(f"Hata: {msg_hafiza}")
     else:
         st.error(mesaj)
-        with st.expander("🔍 PDF Okuma Tanılama Bilgisi"):
-            st.text(loglar)
