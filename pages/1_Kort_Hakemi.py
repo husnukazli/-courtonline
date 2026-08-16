@@ -7,7 +7,6 @@ from datetime import datetime
 
 st.set_page_config(page_title="Kort Hakemi", layout="centered")
 
-# Sayı giriş kutularını ve butonlarını mobil uyumlu/büyük yapacak CSS enjeksiyonu
 st.markdown("""
 <style>
 div[data-baseweb="input"] input {
@@ -70,7 +69,7 @@ def skor_cozumle(skor_str):
 
 def set_skoru_gecerli_mi(p1, p2, durum):
     if p1 == 0 and p2 == 0: return True
-    if durum not in ["Bitti", "Hükmen"]: return True
+    if durum not in ["Bitti"]: return True
     valid_completed = [
         (6,0),(6,1),(6,2),(6,3),(6,4),
         (0,6),(1,6),(2,6),(3,6),(4,6),
@@ -106,7 +105,6 @@ else:
         
     st.divider()
     
-    # --- ÜST SEKMELER (Aktif sekme renk değiştirir) ---
     col_t1, col_t2 = st.columns(2)
     with col_t1:
         if st.button("🎾 Maç Seç / Başlat (Kurulum)", use_container_width=True, type="primary" if st.session_state.hakem_mod == "kurulum" else "secondary"):
@@ -133,7 +131,7 @@ else:
             mac_secenekleri = []
             for idx, row in kort_maclari.iterrows():
                 durum = row.get('Durum', 'Baslamadi')
-                simgeler = {"Oynaniyor": "🟢", "Bitti": "🔴", "Hükmen": "🔴", "Yarım Kaldı": "🟡", "Baslamadi": "⚪"}
+                simgeler = {"Oynaniyor": "🟢", "Bitti": "🔴", "Walkover": "🔴", "Yarım Kaldı": "🟡", "Baslamadi": "⚪"}
                 metin = f"{simgeler.get(durum, '⚪')} {row['Saat']} | {row['Oyuncu 1']} vs {row['Oyuncu 2']} [{durum}]"
                 mac_secenekleri.append((metin, idx))
                 
@@ -149,9 +147,16 @@ else:
                 st.caption(f"Kategori: {secilen_mac['Kategori']}")
                 
                 mevcut_durum = secilen_mac.get("Durum", "Baslamadi")
-                durum_ops = ["Baslamadi", "Oynaniyor", "Yarım Kaldı", "Bitti", "Hükmen"]
+                durum_ops = ["Baslamadi", "Oynaniyor", "Yarım Kaldı", "Bitti", "Walkover"]
                 yeni_durum = st.selectbox("Maç Durumu", durum_ops, index=durum_ops.index(mevcut_durum) if mevcut_durum in durum_ops else 0, key=f"kurulum_durum_{gercek_idx}")
                 
+                # Walkover veya Yarım Kaldı durumunda kazanan seçimi
+                kazanan_secim = "Secilmedi"
+                if yeni_durum in ["Walkover", "Yarım Kaldı"]:
+                    kaz_ops = ["Secilmedi", p1_isim, p2_isim]
+                    mevcut_kazanan = secilen_mac.get("Kazanan", "Secilmedi")
+                    kazanan_secim = st.selectbox("Maçı Kazanan Oyuncu", kaz_ops, index=kaz_ops.index(mevcut_kazanan) if mevcut_kazanan in kaz_ops else 0, key=f"kurulum_kazanan_{gercek_idx}")
+
                 m_bas = secilen_mac.get("Baslangic_Saati", "Secilmedi")
                 m_bit = secilen_mac.get("Bitis_Saati", "Secilmedi")
                 
@@ -178,6 +183,7 @@ else:
                     bit_saat_str = bitis_saati if bitis_saati != "Secilmedi" else ""
                     
                     df_maclar.loc[gercek_idx, "Durum"] = yeni_durum
+                    df_maclar.loc[gercek_idx, "Kazanan"] = kazanan_secim
                     df_maclar.loc[gercek_idx, "Baslangic_Saati"] = b_saat_str
                     df_maclar.loc[gercek_idx, "Bitis_Saati"] = bit_saat_str
                     df_maclar.loc[gercek_idx, "Kura_Kazanan"] = kura_kazanan
@@ -190,7 +196,7 @@ else:
             else:
                 st.info("Bu kortta maç bulunmuyor.")
 
-        # MOD 2: SKOR GİR (AKTİF MAÇLAR - KORT SEÇMEDEN ALT ALTA LİSTE)
+        # MOD 2: SKOR GİR (AKTİF MAÇLAR - KORT SEÇMEDEN ALT ALTA LİSTE VE BELİRGİN KORT NUMARALARI)
         elif st.session_state.hakem_mod == "skor":
             st.subheader("Aktif Maçlar Skor Listesi")
             aktif_maclar = df_maclar[df_maclar["Durum"] == "Oynaniyor"]
@@ -206,14 +212,28 @@ else:
                     p2 = row['Oyuncu 2']
                     mevcut_skor = row.get("Skor", "-")
                     
-                    # Her aktif maç için belirgin kort numaralı geniş açılır kutu (expander)
-                    with st.expander(f"🟢 {kort_no} | {p1} vs {p2} (Skor: {mevcut_skor})"):
+                    # Canlı renkli ve büyük fontlu belirgin kort numarası etiketi
+                    st.markdown(f"""
+                    <div style="background-color: #1a1a1a; border-left: 6px solid #00FF66; padding: 10px 14px; margin-top: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0px 2px 5px rgba(0,0,0,0.3);">
+                        <span style="background-color: #FF3D00; color: #ffffff; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 15px; letter-spacing: 0.5px;">{kort_no.upper()}</span>
+                        <span style="color: #ffffff; font-size: 13px; font-weight: 600;">{p1} vs {p2}</span>
+                        <span style="color: #00FF66; font-size: 13px; font-weight: bold;">Skor: {mevcut_skor}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    with st.expander(f"⚙️ Detaylar ve Skor Güncelle"):
                         mevcut_skorlar = skor_cozumle(mevcut_skor)
                         
                         mevcut_durum = row.get("Durum", "Oynaniyor")
-                        durum_ops = ["Oynaniyor", "Yarım Kaldı", "Bitti", "Hükmen"]
+                        durum_ops = ["Oynaniyor", "Yarım Kaldı", "Bitti", "Walkover"]
                         yeni_durum = st.selectbox("Maç Durumu", durum_ops, index=durum_ops.index(mevcut_durum) if mevcut_durum in durum_ops else 0, key=f"s_durum_{idx}")
                         
+                        kazanan_secim = "Secilmedi"
+                        if yeni_durum in ["Walkover", "Yarım Kaldı"]:
+                            kaz_ops = ["Secilmedi", p1, p2]
+                            mevcut_kazanan = row.get("Kazanan", "Secilmedi")
+                            kazanan_secim = st.selectbox("Maçı Kazanan Oyuncu", kaz_ops, index=kaz_ops.index(mevcut_kazanan) if mevcut_kazanan in kaz_ops else 0, key=f"skor_kazanan_{idx}")
+
                         st.markdown("---")
                         st.markdown("#### 1. Set")
                         c1, c2 = st.columns(2)
@@ -253,7 +273,7 @@ else:
                                 b_saat_str = row.get("Baslangic_Saati", "")
                                 bit_saat_str = bitis_saati if bitis_saati != "Secilmedi" else ""
                                 
-                                if yeni_durum in ["Bitti", "Hükmen"] and not row.get("sure_islendi", False):
+                                if yeni_durum in ["Bitti", "Walkover"] and not row.get("sure_islendi", False):
                                     if b_saat_str and bit_saat_str:
                                         try:
                                             t1 = datetime.strptime(b_saat_str.strip(), "%H:%M")
@@ -269,6 +289,7 @@ else:
                                         except: pass
 
                                 df_maclar.loc[idx, "Durum"] = yeni_durum
+                                df_maclar.loc[idx, "Kazanan"] = kazanan_secim
                                 df_maclar.loc[idx, "Skor"] = skor_metni
                                 df_maclar.loc[idx, "Bitis_Saati"] = bit_saat_str
                                 df_maclar.loc[idx, "sure_islendi"] = row.get("sure_islendi", False)
