@@ -93,6 +93,7 @@ def ayarlari_ayikla(df):
                     "Kort": kort.strip(),
                     "Saat": saat,
                     "Kategori": kategori,
+                    "Skor_Formati": "3 Normal Set",
                     "Oyuncu 1": oyuncu_1,
                     "Oyuncu 2": oyuncu_2,
                     "Durum": "Baslamadi",
@@ -169,6 +170,7 @@ def mac_suresi_hesapla(mac):
 def tooltip_html_olustur(mac):
     saat = mac.get('Saat', '-')
     kategori = mac.get('Kategori', '-')
+    format_bilgisi = mac.get('Skor_Formati', 'Format Seçilmedi')
     b_saat = mac.get('Baslangic_Saati', '')
     bit_saat = mac.get('Bitis_Saati', '')
     k_kazanan = mac.get('Kura_Kazanan', '')
@@ -178,7 +180,8 @@ def tooltip_html_olustur(mac):
     
     html = f'<b style="color: #00E5FF; font-size: 14px;">Maç Detayları</b><br>'
     html += f'<b>Planlanan Saat:</b> <span style="color: #FFD700; font-weight: bold;">{saat}</span><br>'
-    html += f'<b>Kategori:</b> {kategori}'
+    html += f'<b>Kategori:</b> {kategori}<br>'
+    html += f'<b>Maç Formatı:</b> <span style="color: #B2FF59;">{format_bilgisi}</span>'
     
     detaylar = []
     if b_saat and b_saat != "Secilmedi":
@@ -414,7 +417,6 @@ else:
             if isinstance(istatistikler, dict) and "sureler" in istatistikler:
                 sureler.extend(istatistikler["sureler"])
             
-            # Sadece normal "Bitti" statüsündeki maç süreleri istatistiğe dahil edilir (Walkover ve Retired hariç)
             for _, row in df_stat.iterrows():
                 if row.get("Durum") == "Bitti":
                     b_saat = row.get("Baslangic_Saati", "")
@@ -446,6 +448,56 @@ else:
             with st5:
                 st.metric("Turnuva Ort. Süre", f"{ortalama_sure} dk")
                 
+            st.divider()
+            
+            # --- YENİ EKLENEN KATEGORİ VE FORMAT DENETİMİ BÖLÜMÜ ---
+            st.markdown("### 🎾 Kategori ve Maç Formatı Eşleştirme")
+            kategoriler = [k for k in df_stat["Kategori"].unique() if str(k).strip() and k != "Kategori Yok"]
+            
+            if kategoriler:
+                hafiza = githubdan_veri_getir("kategori_format_hafizasi.json")
+                if not isinstance(hafiza, dict):
+                    hafiza = {}
+                    
+                FORMAT_SECENEKLERI = [
+                    "3 Kısa Set",
+                    "3 Normal Set",
+                    "2 Normal Set, 3. Set 10 Puanlık Maç Tie-Break",
+                    "2 Kısa Set, 3. Set 10 Puanlık Maç Tie-Break",
+                    "2 Kısa Set, 3. Set 7 Puanlık Maç Tie-Break"
+                ]
+                
+                yeni_hafiza = {}
+                col_k1, col_k2 = st.columns(2)
+                with col_k1: st.markdown("**Kategori / Yaş Grubu**")
+                with col_k2: st.markdown("**Uygulanacak Format**")
+                
+                for kat in kategoriler:
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.markdown(f"<div style='margin-top: 8px;'>• {kat}</div>", unsafe_allow_html=True)
+                    with c2:
+                        mevcut_f = hafiza.get(kat, FORMAT_SECENEKLERI[0])
+                        idx = FORMAT_SECENEKLERI.index(mevcut_f) if mevcut_f in FORMAT_SECENEKLERI else 0
+                        secilen = st.selectbox("Format", FORMAT_SECENEKLERI, index=idx, key=f"fmt_{kat}", label_visibility="collapsed")
+                        yeni_hafiza[kat] = secilen
+                        
+                if st.button("Formatları Kaydet ve Tüm Maçlara Uygula", type="primary"):
+                    for i, row in df_stat.iterrows():
+                        if row["Kategori"] in yeni_hafiza:
+                            df_stat.at[i, "Skor_Formati"] = yeni_hafiza[row["Kategori"]]
+                            
+                    b1, m1 = github_a_kaydet(df_stat.to_dict(orient="records"), "mac_programi.json")
+                    b2, m2 = github_a_kaydet(yeni_hafiza, "kategori_format_hafizasi.json")
+                    
+                    if b1 and b2:
+                        st.success("Formatlar başarıyla tüm maçlara uygulandı!")
+                        st.rerun()
+                    else:
+                        st.error(f"Hata oluştu. M1: {m1}, M2: {m2}")
+            else:
+                st.info("Sistemde eşleştirilecek kategori bulunamadı.")
+            
             st.divider()
 
         st.markdown("### Hakem Yonetimi")
