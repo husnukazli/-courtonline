@@ -69,7 +69,7 @@ def skor_cozumle(skor_str):
 
 def set_skoru_gecerli_mi(p1, p2, durum):
     if p1 == 0 and p2 == 0: return True
-    # Sadece durum "Bitti" ise tam set bitiş kurallarını uygula. Diğer durumlarda (Oynaniyor, Retired, Walkover) yarım skorlara izin ver.
+    # Sadece durum "Bitti" ise tam set kurallarını uygula. Oynaniyor, Retired, Walkover durumlarında her türlü ara skora izin ver.
     if durum != "Bitti": return True
     
     valid_completed = [
@@ -181,7 +181,7 @@ else:
                 
                 if st.button("Kurulumu Kaydet", type="primary"):
                     b_saat_str = baslangic_saati if baslangic_saati != "Secilmedi" else ""
-                    bit_saat_str = bitis_saati if bitis_saati != "Secilmedi" else ""
+                    bit_saat_str = bitis_saati if 'bitis_saati' in locals() and bitis_saati != "Secilmedi" else ""
                     
                     df_maclar.loc[gercek_idx, "Durum"] = yeni_durum
                     df_maclar.loc[gercek_idx, "Kazanan"] = kazanan_secim
@@ -271,13 +271,13 @@ else:
                                 if s3_p1 > 0 or s3_p2 > 0: skor_metni += f" {s3_p1}/{s3_p2}"
                                 
                                 b_saat_str = row.get("Baslangic_Saati", "")
-                                bit_saat_str = bitis_saati if 'bitis_saati' in locals() and bitis_saati != "Secilmedi" else ""
+                                bitis_saat_str = bitis_saati if 'bitis_saati' in locals() and bitis_saati != "Secilmedi" else ""
                                 
                                 if yeni_durum in ["Bitti", "Walkover", "Retired"] and not row.get("sure_islendi", False):
-                                    if b_saat_str and bit_saat_str:
+                                    if b_saat_str and bitis_saat_str:
                                         try:
                                             t1 = datetime.strptime(b_saat_str.strip(), "%H:%M")
-                                            t2 = datetime.strptime(bit_saat_str.strip(), "%H:%M")
+                                            t2 = datetime.strptime(bitis_saat_str.strip(), "%H:%M")
                                             diff = (t2 - t1).total_seconds() / 60
                                             if diff > 0:
                                                 istatistikler = githubdan_veri_getir("turnuva_istatistikleri.json")
