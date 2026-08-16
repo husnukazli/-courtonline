@@ -91,6 +91,7 @@ def ayarlari_ayikla(df):
     return pd.DataFrame(mac_listesi)
 
 def kazanan_kim(mac):
+    # Önce açıkça seçilen bir kazanan var mı ona bakıyoruz (Walkover / Retired için kritik)
     kazanan_str = mac.get("Kazanan", "")
     if kazanan_str and kazanan_str != "Secilmedi":
         if kazanan_str == mac.get("Oyuncu 1"): return 1
@@ -249,7 +250,7 @@ else:
                                 k_tercih = mac.get("Kura_Tercih", "-")
                                 s_tarafi = mac.get("Saha_Tarafi", "-")
                                 
-                                kazanan = kazanan_kim(mac) if durum in ["Bitti", "Walkover"] else None
+                                kazanan = kazanan_kim(mac) if durum in ["Bitti", "Walkover", "Retired"] else None
                                 if kazanan == 1:
                                     p1_style = "color: #ffffff; font-weight: bold;"
                                     p2_style = "color: #666666;"
@@ -274,8 +275,8 @@ else:
                                     durum_str = durum.upper()
                                     durum_style = "color: #FF1744; font-weight: bold;"
                                     skor_style = "color: #FF1744; font-weight: bold; font-size: 13px;"
-                                elif durum == "Yarım Kaldı":
-                                    durum_str = "YARIM"
+                                elif durum == "Retired":
+                                    durum_str = "RET"
                                     durum_style = "color: #FFEA00; font-weight: bold;"
                                     skor_style = "color: #FFEA00; font-weight: bold; font-size: 13px;"
                                 else:
@@ -322,7 +323,7 @@ else:
         if program_data:
             df_stat = pd.DataFrame(program_data)
             toplam_mac = len(df_stat)
-            biten_mac = len(df_stat[df_stat["Durum"].isin(["Bitti", "Walkover"])])
+            biten_mac = len(df_stat[df_stat["Durum"].isin(["Bitti", "Walkover", "Retired"])])
             devam_eden = len(df_stat[df_stat["Durum"] == "Oynaniyor"])
             baslamayan = len(df_stat[df_stat["Durum"] == "Baslamadi"])
             oran = int((biten_mac / toplam_mac * 100)) if toplam_mac > 0 else 0
@@ -333,7 +334,7 @@ else:
                 sureler.extend(istatistikler["sureler"])
             
             for _, row in df_stat.iterrows():
-                if row.get("Durum") in ["Bitti", "Walkover"]:
+                if row.get("Durum") in ["Bitti", "Walkover", "Retired"]:
                     b_saat = row.get("Baslangic_Saati", "")
                     bit_saat = row.get("Bitis_Saati", "")
                     if b_saat and bit_saat and b_saat != "Secilmedi" and bit_saat != "Secilmedi":
@@ -424,7 +425,7 @@ else:
                 
                 if not tum_temiz_veriler.empty:
                     st.dataframe(tum_temiz_veriler, use_container_width=True)
-                    if st.button("Onayla und Mevcut Programın Üzerine Yaz"):
+                    if st.button("Onayla ve Mevcut Programın Üzerine Yaz"):
                         basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
                         if basarili:
                             st.success("Yeni program kaydedildi!")
