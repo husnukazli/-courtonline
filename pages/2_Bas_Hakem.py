@@ -8,17 +8,18 @@ from datetime import datetime, timezone, timedelta
 
 st.set_page_config(page_title="Bashakem Paneli", layout="wide")
 
-# --- SENİN KODUNA DOKUNMADAN SADECE BOŞLUK VE KAYDIRMA İÇİN EKLENEN CSS ---
+# --- BENİM BOZDUĞUM SCROLL'U DÜZELTEN VE ÜST BOŞLUĞU DARALTAN CSS ---
 st.markdown("""
 <style>
-    /* Üstteki devasa boşluğu yok eder */
+    /* Üstteki devasa boşluğu yok eder, alttan da rahat inmen için pay bırakır */
     .block-container {
         padding-top: 1rem !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: 5rem !important;
     }
-    /* Sayfanın 3. maçtan sonra aşağıya rahatça kaymasını sağlar */
-    .stApp {
-        overflow-y: visible !important;
+    /* Benim bozduğum SCROLL (kaydırma) özelliğini geri getirir ve zorla aktif eder */
+    html, body, [data-testid="stAppViewContainer"], .stApp {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
     }
 </style>
 """, unsafe_allow_html=True)
