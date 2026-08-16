@@ -3,22 +3,27 @@ import pandas as pd
 import requests
 import base64
 import json
+import time
 from datetime import datetime, timezone, timedelta
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Kort Hakemi", layout="centered")
 
-# --- MOBİL KLAVYE VE GÖRSEL AYARLAR (JS ENJEKSİYONU) ---
+# --- MOBİL KLAVYE AGRESİF ENGELLEME VE GÖRSEL AYARLAR ---
 st.markdown("""
 <script>
-document.addEventListener('focusin', function(e) {
-    if (e.target.matches('.stSelectbox input')) {
+// Şifre alanı hariç hiçbir inputta (sayı, seçim vs.) klavyenin açılmasına izin verme
+const preventKeyboard = function(e) {
+    if (e.target.tagName === 'INPUT' && e.target.type !== 'password') {
+        e.target.setAttribute('readonly', 'readonly');
+        e.target.setAttribute('inputmode', 'none');
         e.target.blur();
     }
-});
+};
+document.addEventListener('focusin', preventKeyboard, true);
+document.addEventListener('touchstart', preventKeyboard, true);
 </script>
 <style>
-/* Üstteki devasa boşluğu yok eder ve ekranın kaymasını sağlar */
 .block-container {
     padding-top: 1rem !important;
     padding-bottom: 2rem !important;
@@ -26,8 +31,7 @@ document.addEventListener('focusin', function(e) {
 .stApp {
     overflow-y: visible !important;
 }
-
-/* Klavye tetiklemesini engellemek için */
+/* Klavye tetiklemesini engellemek için ince ayarlar */
 input { caret-color: transparent !important; }
 div[data-baseweb="input"] input { height: 48px !important; font-size: 20px !important; font-weight: bold !important; text-align: center !important; }
 button[data-baseweb="button"] { height: 38px !important; width: 38px !important; }
@@ -145,6 +149,11 @@ else:
             
     st.divider()
     
+    if st.button("🔄 Ekranı Yenile / Güncel Veriyi Çek", use_container_width=True):
+        with st.spinner("Veriler Çekiliyor..."):
+            time.sleep(0.5)
+            st.rerun()
+
     program = githubdan_veri_getir("mac_programi.json")
     if program:
         df_maclar = pd.DataFrame(program)
@@ -172,7 +181,13 @@ else:
                 gercek_idx = next(m[1] for m in mac_secenekleri if m[0] == secilen_label)
                 secilen_mac = df_maclar.loc[gercek_idx]
                 
-                st.markdown(f"**{secilen_mac['Oyuncu 1']} vs {secilen_mac['Oyuncu 2']}**")
+                # Kurulum paneli durum renk kodlaması
+                durum_kurulum = secilen_mac.get("Durum", "Baslamadi")
+                if durum_kurulum == "Oynaniyor": renk_k = "#00FF66"
+                elif durum_kurulum in ["Bitti", "Walkover", "Retired"]: renk_k = "#FF1744"
+                else: renk_k = "#aaaaaa"
+                
+                st.markdown(f"<h4 style='color: {renk_k}; text-align: center;'>{secilen_mac['Oyuncu 1']} vs {secilen_mac['Oyuncu 2']}</h4>", unsafe_allow_html=True)
                 
                 yeni_durum = st.selectbox("Maç Durumu", ["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"], 
                                           index=["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"].index(secilen_mac.get("Durum", "Baslamadi")), key=f"kur_d_{gercek_idx}")
@@ -199,14 +214,17 @@ else:
                 bitis_saati = st.selectbox("Bitiş Saati", SAAT_LISTESI, index=bit_idx, key=f"bit_{gercek_idx}")
                 
                 if st.button("Kurulumu Kaydet", type="primary"):
-                    df_maclar.loc[gercek_idx, ["Durum", "Kura_Kazanan", "Kura_Tercih", "Saha_Tarafi", "Baslangic_Saati", "Bitis_Saati", "Son_Hakem"]] = [
-                        yeni_durum, kura_kazanan, kura_tercih, saha_tarafi, (baslangic_saati if baslangic_saati != "Secilmedi" else ""), (bitis_saati if bitis_saati != "Secilmedi" else ""), st.session_state.kullanici
-                    ]
-                    basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
-                    if basarili:
-                        st.success("Kaydedildi!")
-                    else:
-                        st.error(mesaj)
+                    with st.spinner("Buluta Kaydediliyor..."):
+                        df_maclar.loc[gercek_idx, ["Durum", "Kura_Kazanan", "Kura_Tercih", "Saha_Tarafi", "Baslangic_Saati", "Bitis_Saati", "Son_Hakem"]] = [
+                            yeni_durum, kura_kazanan, kura_tercih, saha_tarafi, (baslangic_saati if baslangic_saati != "Secilmedi" else ""), (bitis_saati if bitis_saati != "Secilmedi" else ""), st.session_state.kullanici
+                        ]
+                        basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
+                        if basarili: 
+                            st.success("✅ Başarıyla Kaydedildi!")
+                            time.sleep(0.7)
+                            st.rerun()
+                        else: 
+                            st.error(mesaj)
             else:
                 st.info("Bu kortta maç bulunmuyor.")
 
@@ -220,10 +238,23 @@ else:
             else:
                 for idx, row in aktif.iterrows():
                     format_bilgisi = row.get("Skor_Formati", "3 Normal Set")
+                    durum_skor = row.get("Durum", "Oynaniyor")
+                    
+                    # Skor Paneli Renk Kodlaması
+                    if durum_skor == "Oynaniyor":
+                        renk = "#00FF66" # Yeşil
+                        durum_metni = "DEVAM EDİYOR"
+                    elif durum_skor in ["Bitti", "Walkover", "Retired"]:
+                        renk = "#FF1744" # Kırmızı
+                        durum_metni = durum_skor.upper()
+                    else:
+                        renk = "#888888" # Gri
+                        durum_metni = "BAŞLAMADI"
+
                     st.markdown(f"""
-                    <div style="background-color: #1a1a1a; border-left: 6px solid #00FF66; padding: 10px 14px; margin-top: 12px; border-radius: 6px;">
-                        <span style="color: #ffffff; font-weight: bold;">{row['Kort'].upper()} | {row['Oyuncu 1']} vs {row['Oyuncu 2']}</span><br>
-                        <span style="color: #B2FF59; font-size: 13px;">Format: {format_bilgisi}</span>
+                    <div style="background-color: #1a1a1a; border-left: 6px solid {renk}; padding: 10px 14px; margin-top: 12px; border-radius: 6px;">
+                        <span style="color: {renk}; font-weight: bold; font-size: 15px;">{row['Kort'].upper()} | {row['Oyuncu 1']} vs {row['Oyuncu 2']}</span><br>
+                        <span style="color: #ccc; font-size: 12px;">Durum: <b style="color:{renk}">{durum_metni}</b> | Format: <span style="color: #B2FF59;">{format_bilgisi}</span></span>
                     </div>
                     """, unsafe_allow_html=True)
                     
@@ -248,7 +279,7 @@ else:
                         elif "2 Kısa Set" in format_bilgisi and "Tie-Break" in format_bilgisi:
                             s1_max, s2_max, s3_max = 5, 5, 50
                             
-                        # Hakem eski ve büyük bir değer girmişse hata vermemesi için min() ile koruma altına alındı
+                        # Hata vermemesi için min() ile koruma altına alındı
                         s1p1_val = min(mevcut_skorlar["s1_p1"], s1_max)
                         s1p2_val = min(mevcut_skorlar["s1_p2"], s1_max)
                         s2p1_val = min(mevcut_skorlar["s2_p1"], s2_max)
@@ -266,14 +297,17 @@ else:
                         bit_val = st.selectbox("Bitiş Saati", SAAT_LISTESI, index=CURRENT_TIME_IDX, key=f"b_{idx}")
                         
                         if st.button("Skoru Kaydet", key=f"btn_{idx}", type="primary"):
-                            df_maclar.loc[idx, ["Durum", "Kazanan", "Skor", "Bitis_Saati", "Son_Hakem"]] = [
-                                yeni_d, kazanan, f"{s1p1}/{s1p2} {s2p1}/{s2p2} {s3p1}/{s3p2}", (bit_val if bit_val != "Secilmedi" else ""), st.session_state.kullanici
-                            ]
-                            
-                            basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
-                            if basarili:
-                                st.success("Güncellendi!")
-                            else:
-                                st.error(mesaj)
+                            with st.spinner("Buluta Kaydediliyor..."):
+                                df_maclar.loc[idx, ["Durum", "Kazanan", "Skor", "Bitis_Saati", "Son_Hakem"]] = [
+                                    yeni_d, kazanan, f"{s1p1}/{s1p2} {s2p1}/{s2p2} {s3p1}/{s3p2}", (bit_val if bit_val != "Secilmedi" else ""), st.session_state.kullanici
+                                ]
+                                
+                                basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
+                                if basarili:
+                                    st.success("✅ Skor Başarıyla Güncellendi!")
+                                    time.sleep(0.7)
+                                    st.rerun()
+                                else:
+                                    st.error(mesaj)
     else:
         st.warning("Program verisi çekilemedi.")
