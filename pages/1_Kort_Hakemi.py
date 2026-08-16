@@ -28,7 +28,6 @@ button[data-baseweb="button"] { height: 38px !important; width: 38px !important;
 st.title("Kort Hakemi Paneli")
 
 # --- YARDIMCI FONKSİYONLAR ---
-
 def get_current_time_index(saat_listesi):
     try:
         TRT = timezone(timedelta(hours=3))
@@ -153,7 +152,6 @@ else:
             kort_maclari = df_maclar[df_maclar["Kort"] == secilen_kort]
             mac_secenekleri = []
             
-            # Tüm maçları listeye ekle
             for idx, row in kort_maclari.iterrows():
                 durum = row.get('Durum', 'Baslamadi')
                 label = f"{row['Saat']} | {row['Oyuncu 1']} vs {row['Oyuncu 2']} [{durum}]"
@@ -174,7 +172,7 @@ else:
                 yeni_durum = st.selectbox("Maç Durumu", ["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"], 
                                           index=["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"].index(secilen_mac.get("Durum", "Baslamadi")), key=f"kur_d_{gercek_idx}")
                 
-                # Kurumsal Özellikler - AÇIK VE DETAYLI
+                # Kurumsal Özellikler
                 kaz_ops = ["Secilmedi", secilen_mac['Oyuncu 1'], secilen_mac['Oyuncu 2']]
                 kura_val = secilen_mac.get("Kura_Kazanan", "Secilmedi")
                 kura_kazanan = st.selectbox("Kura Kazanan", kaz_ops, index=kaz_ops.index(kura_val) if kura_val in kaz_ops else 0, key=f"k_kaz_{gercek_idx}")
@@ -198,19 +196,11 @@ else:
                 bitis_saati = st.selectbox("Bitiş Saati", SAAT_LISTESI, index=bit_idx, key=f"bit_{gercek_idx}")
                 
                 if st.button("Kurulumu Kaydet", type="primary"):
-                    df_maclar.loc[gercek_idx, "Durum"] = yeni_durum
-                    df_maclar.loc[gercek_idx, "Kura_Kazanan"] = kura_kazanan
-                    df_maclar.loc[gercek_idx, "Kura_Tercih"] = kura_tercih
-                    df_maclar.loc[gercek_idx, "Saha_Tarafi"] = saha_tarafi
-                    df_maclar.loc[gercek_idx, "Baslangic_Saati"] = baslangic_saati if baslangic_saati != "Secilmedi" else ""
-                    df_maclar.loc[gercek_idx, "Bitis_Saati"] = bitis_saati if bitis_saati != "Secilmedi" else ""
-                    df_maclar.loc[gercek_idx, "Son_Hakem"] = st.session_state.kullanici
-                    
+                    df_maclar.loc[gercek_idx, ["Durum", "Kura_Kazanan", "Kura_Tercih", "Saha_Tarafi", "Baslangic_Saati", "Bitis_Saati", "Son_Hakem"]] = [
+                        yeni_durum, kura_kazanan, kura_tercih, saha_tarafi, (baslangic_saati if baslangic_saati != "Secilmedi" else ""), (bitis_saati if bitis_saati != "Secilmedi" else ""), st.session_state.kullanici
+                    ]
                     basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
-                    if basarili:
-                        st.success("Maç kurulum bilgileri kaydedildi!")
-                    else:
-                        st.error(mesaj)
+                    if basarili: st.success("Kaydedildi!") else: st.error(mesaj)
             else:
                 st.info("Bu kortta maç bulunmuyor.")
 
@@ -232,7 +222,7 @@ else:
                     with st.expander("⚙️ Detaylar ve Skor Güncelle"):
                         mevcut_skorlar = skor_cozumle(row.get("Skor", "-"))
                         
-                        yeni_d = st.selectbox("Durum", ["Oynaniyor", "Retired", "Bitti", "Walkover"], index=["Oynaniyor", "Retired", "Bitti", "Walkover"].index(row.get("Durum", "Oynaniyor")), key=f"d_{idx}")
+                        yeni_d = st.selectbox("Durum Güncelle", ["Oynaniyor", "Retired", "Bitti", "Walkover"], index=["Oynaniyor", "Retired", "Bitti", "Walkover"].index(row.get("Durum", "Oynaniyor")), key=f"d_{idx}")
                         
                         kaz_ops = ["Secilmedi", row['Oyuncu 1'], row['Oyuncu 2']]
                         kaz_val = row.get("Kazanan", "Secilmedi")
@@ -242,15 +232,15 @@ else:
                         s1p2 = st.number_input(f"{row['Oyuncu 2']} (Set 1)", 0, 7, mevcut_skorlar["s1_p2"], key=f"s1p2_{idx}")
                         s2p1 = st.number_input(f"{row['Oyuncu 1']} (Set 2)", 0, 7, mevcut_skorlar["s2_p1"], key=f"s2p1_{idx}")
                         s2p2 = st.number_input(f"{row['Oyuncu 2']} (Set 2)", 0, 7, mevcut_skorlar["s2_p2"], key=f"s2p2_{idx}")
+                        s3p1 = st.number_input(f"{row['Oyuncu 1']} (Set 3)", 0, 7, mevcut_skorlar["s3_p1"], key=f"s3p1_{idx}")
+                        s3p2 = st.number_input(f"{row['Oyuncu 2']} (Set 3)", 0, 7, mevcut_skorlar["s3_p2"], key=f"s3p2_{idx}")
                         
-                        bit_val = st.selectbox("Bitiş Saati", SAAT_LISTESI, index=0, key=f"b_{idx}")
+                        bit_val = st.selectbox("Bitiş Saati", SAAT_LISTESI, index=CURRENT_TIME_IDX, key=f"b_{idx}")
                         
                         if st.button("Skoru Kaydet", key=f"btn_{idx}", type="primary"):
-                            df_maclar.loc[idx, "Durum"] = yeni_d
-                            df_maclar.loc[idx, "Kazanan"] = kazanan
-                            df_maclar.loc[idx, "Skor"] = f"{s1p1}/{s1p2} {s2p1}/{s2p2}"
-                            df_maclar.loc[idx, "Bitis_Saati"] = bit_val if bit_val != "Secilmedi" else ""
-                            df_maclar.loc[idx, "Son_Hakem"] = st.session_state.kullanici
+                            df_maclar.loc[idx, ["Durum", "Kazanan", "Skor", "Bitis_Saati", "Son_Hakem"]] = [
+                                yeni_d, kazanan, f"{s1p1}/{s1p2} {s2p1}/{s2p2} {s3p1}/{s3p2}", (bit_val if bit_val != "Secilmedi" else ""), st.session_state.kullanici
+                            ]
                             
                             basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
                             if basarili:
