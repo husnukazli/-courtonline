@@ -311,16 +311,16 @@
         "Kategori": "Erkek 9 Yaş T",
         "Oyuncu 1": "KENAN GÖĞEBAKAN",
         "Oyuncu 2": "ÇINAR SAĞLAM",
-        "Durum": "Baslamadi",
+        "Durum": "Oynaniyor",
         "Skor": NaN,
-        "Baslangic_Saati": NaN,
-        "Bitis_Saati": NaN,
-        "Kura_Kazanan": NaN,
-        "Kura_Tercih": NaN,
-        "Saha_Tarafi": NaN,
+        "Baslangic_Saati": "12:30",
+        "Bitis_Saati": "",
+        "Kura_Kazanan": "ÇINAR SAĞLAM",
+        "Kura_Tercih": "Karşılama",
+        "Saha_Tarafi": "Secilmedi",
         "sure_islendi": NaN,
         "Kazanan": NaN,
-        "Son_Hakem": NaN
+        "Son_Hakem": "CANAN ÇAPLIK"
     },
     {
         "Kort": "Kort 5",
