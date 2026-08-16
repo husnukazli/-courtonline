@@ -54,15 +54,13 @@ def github_a_kaydet(veri, dosya_yolu):
         return False, str(e)
 
 def resmi_ai_ile_oku(resim_dosyasi):
-    """Görüntüyü Google Gemini API'sine gönderip JSON formatında maç listesi alır."""
+    """Görüntüyü Google Gemini Flash API'sine gönderip JSON formatında maç listesi alır."""
     try:
-        # Gemini API Ayarları
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
         
-        # ÇÖZÜM NOKTASI: Model adı gemini-1.5-pro-latest veya gemini-1.5-flash olarak güncellendi.
-        model = genai.GenerativeModel('gemini-1.5-pro-latest')
+        # Kararlı ve hızlı görsel işleme modeli
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # Resmi Streamlit'ten PIL formatına çevir
         img = Image.open(resim_dosyasi)
         
         prompt = """
@@ -84,7 +82,6 @@ def resmi_ai_ile_oku(resim_dosyasi):
         response = model.generate_content([prompt, img])
         json_metni = response.text.strip()
         
-        # Eğer Gemini fazladan markdown eklediyse temizle
         if json_metni.startswith("```json"):
             json_metni = json_metni[7:-3]
         elif json_metni.startswith("```"):
@@ -112,7 +109,7 @@ if yuklenen_resim is not None:
     st.image(yuklenen_resim, caption="Yüklenen Tablo", use_container_width=True)
     
     if st.button("🤖 Yapay Zeka ile Tabloyu Çözümle", type="primary"):
-        with st.spinner("Gemini 1.5 Pro tabloyu piksel piksel inceliyor... Lütfen bekleyin."):
+        with st.spinner("Gemini Flash tabloyu inceliyor... Lütfen bekleyin."):
             df, mesaj = resmi_ai_ile_oku(yuklenen_resim)
             
             if df is not None:
@@ -121,7 +118,6 @@ if yuklenen_resim is not None:
             else:
                 st.error(mesaj)
 
-# Çözümlenen veri varsa format eşleştirme ekranını göster
 if "temp_df" in st.session_state:
     df = st.session_state.temp_df
     
