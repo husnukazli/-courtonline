@@ -213,15 +213,15 @@
         "Kategori": "Kadın 8 Yaş T",
         "Oyuncu 1": "ELIF ECE ÖNTÜRK",
         "Oyuncu 2": "AYŞE ÇAKIRÖZER",
-        "Durum": "Baslamadi",
+        "Durum": "Oynaniyor",
         "Skor": NaN,
-        "Baslangic_Saati": NaN,
-        "Bitis_Saati": NaN,
-        "Kura_Kazanan": NaN,
-        "Kura_Tercih": NaN,
-        "Saha_Tarafi": NaN,
+        "Baslangic_Saati": "11:20",
+        "Bitis_Saati": "",
+        "Kura_Kazanan": "ELIF ECE ÖNTÜRK",
+        "Kura_Tercih": "Servis",
+        "Saha_Tarafi": "Sandalyenin Solu / Sahanin Solu",
         "sure_islendi": NaN,
-        "Kazanan": NaN
+        "Kazanan": "Secilmedi"
     },
     {
         "Kort": "Kort 4",
