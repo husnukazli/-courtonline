@@ -131,7 +131,7 @@ else:
             mac_secenekleri = []
             for idx, row in kort_maclari.iterrows():
                 durum = row.get('Durum', 'Baslamadi')
-                simgeler = {"Oynaniyor": "🟢", "Bitti": "🔴", "Walkover": "🔴", "Yarım Kaldı": "🟡", "Baslamadi": "⚪"}
+                simgeler = {"Oynaniyor": "🟢", "Bitti": "🔴", "Walkover": "🔴", "Retired": "🟡", "Baslamadi": "⚪"}
                 metin = f"{simgeler.get(durum, '⚪')} {row['Saat']} | {row['Oyuncu 1']} vs {row['Oyuncu 2']} [{durum}]"
                 mac_secenekleri.append((metin, idx))
                 
@@ -147,12 +147,12 @@ else:
                 st.caption(f"Kategori: {secilen_mac['Kategori']}")
                 
                 mevcut_durum = secilen_mac.get("Durum", "Baslamadi")
-                durum_ops = ["Baslamadi", "Oynaniyor", "Yarım Kaldı", "Bitti", "Walkover"]
+                durum_ops = ["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"]
                 yeni_durum = st.selectbox("Maç Durumu", durum_ops, index=durum_ops.index(mevcut_durum) if mevcut_durum in durum_ops else 0, key=f"kurulum_durum_{gercek_idx}")
                 
-                # Walkover veya Yarım Kaldı durumunda kazanan seçimi
+                # Walkover veya Retired durumunda kazanan seçimi
                 kazanan_secim = "Secilmedi"
-                if yeni_durum in ["Walkover", "Yarım Kaldı"]:
+                if yeni_durum in ["Walkover", "Retired"]:
                     kaz_ops = ["Secilmedi", p1_isim, p2_isim]
                     mevcut_kazanan = secilen_mac.get("Kazanan", "Secilmedi")
                     kazanan_secim = st.selectbox("Maçı Kazanan Oyuncu", kaz_ops, index=kaz_ops.index(mevcut_kazanan) if mevcut_kazanan in kaz_ops else 0, key=f"kurulum_kazanan_{gercek_idx}")
@@ -212,7 +212,6 @@ else:
                     p2 = row['Oyuncu 2']
                     mevcut_skor = row.get("Skor", "-")
                     
-                    # Canlı renkli ve büyük fontlu belirgin kort numarası etiketi
                     st.markdown(f"""
                     <div style="background-color: #1a1a1a; border-left: 6px solid #00FF66; padding: 10px 14px; margin-top: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0px 2px 5px rgba(0,0,0,0.3);">
                         <span style="background-color: #FF3D00; color: #ffffff; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 15px; letter-spacing: 0.5px;">{kort_no.upper()}</span>
@@ -225,11 +224,11 @@ else:
                         mevcut_skorlar = skor_cozumle(mevcut_skor)
                         
                         mevcut_durum = row.get("Durum", "Oynaniyor")
-                        durum_ops = ["Oynaniyor", "Yarım Kaldı", "Bitti", "Walkover"]
+                        durum_ops = ["Oynaniyor", "Retired", "Bitti", "Walkover"]
                         yeni_durum = st.selectbox("Maç Durumu", durum_ops, index=durum_ops.index(mevcut_durum) if mevcut_durum in durum_ops else 0, key=f"s_durum_{idx}")
                         
                         kazanan_secim = "Secilmedi"
-                        if yeni_durum in ["Walkover", "Yarım Kaldı"]:
+                        if yeni_durum in ["Walkover", "Retired"]:
                             kaz_ops = ["Secilmedi", p1, p2]
                             mevcut_kazanan = row.get("Kazanan", "Secilmedi")
                             kazanan_secim = st.selectbox("Maçı Kazanan Oyuncu", kaz_ops, index=kaz_ops.index(mevcut_kazanan) if mevcut_kazanan in kaz_ops else 0, key=f"skor_kazanan_{idx}")
@@ -273,7 +272,7 @@ else:
                                 b_saat_str = row.get("Baslangic_Saati", "")
                                 bit_saat_str = bitis_saati if bitis_saati != "Secilmedi" else ""
                                 
-                                if yeni_durum in ["Bitti", "Walkover"] and not row.get("sure_islendi", False):
+                                if yeni_durum in ["Bitti", "Walkover", "Retired"] and not row.get("sure_islendi", False):
                                     if b_saat_str and bit_saat_str:
                                         try:
                                             t1 = datetime.strptime(b_saat_str.strip(), "%H:%M")
@@ -291,7 +290,7 @@ else:
                                 df_maclar.loc[idx, "Durum"] = yeni_durum
                                 df_maclar.loc[idx, "Kazanan"] = kazanan_secim
                                 df_maclar.loc[idx, "Skor"] = skor_metni
-                                df_maclar.loc[idx, "Bitis_Saati"] = bit_saat_str
+                                df_maclar.loc[idx, "Bitis_Saati"] = bitis_saat_str
                                 df_maclar.loc[idx, "sure_islendi"] = row.get("sure_islendi", False)
                                 
                                 basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
