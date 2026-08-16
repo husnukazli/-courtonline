@@ -53,23 +53,25 @@ def github_a_kaydet(veri, dosya_yolu):
         return False, str(e)
 
 def pdf_programi_oku(pdf_file):
-    """TTF Maç programı PDF'ini (Tüm sayfalar ve ızgaralar) akıllıca okur."""
+    """TTF Maç programı PDF'ini metin hizalama (text strategy) ile hatasız okur."""
     tum_maclar = []
     
     try:
         with pdfplumber.open(pdf_file) as pdf:
             for sayfa in pdf.pages:
-                # PDF tablolarını çek (Çizgi tabanlı arama)
-                tablolar = sayfa.extract_tables()
                 
-                # Eğer PDF'te çizgi yoksa metin koordinatlarıyla tablo oluşturmayı dene
-                if not tablolar or (tablolar and len(tablolar[0]) < 2):
-                    tablolar = sayfa.extract_tables({"vertical_strategy": "text", "horizontal_strategy": "text"})
+                # ÇÖZÜM NOKTASI: PDF çizgilerini yoksay, sadece yazılan metinlerin aralığına bak!
+                ayarlar = {
+                    "vertical_strategy": "text",
+                    "horizontal_strategy": "text"
+                }
+                
+                tablolar = sayfa.extract_tables(ayarlar)
                 
                 for tablo in tablolar:
                     if not tablo: continue
                     
-                    # 1. Aşama: Başlık Satırını Bul
+                    # 1. Aşama: Kort İsimlerinin Olduğu Başlık Satırını Bul
                     header_idx = -1
                     for i, satir in enumerate(tablo):
                         satir_metni = " ".join([str(h).lower() for h in satir if h])
@@ -80,6 +82,7 @@ def pdf_programi_oku(pdf_file):
                     if header_idx == -1: continue
                     
                     headers = tablo[header_idx]
+                    # İlk sütun saattir, boşsa doldur
                     if not headers[0] or str(headers[0]).strip() == "":
                         headers[0] = "Saat"
                         
@@ -93,7 +96,7 @@ def pdf_programi_oku(pdf_file):
                         saat_hucre = str(satir[0]).strip() if satir[0] else ""
                         saat = saat_hucre.split()[0] if saat_hucre else ""
                         
-                        # Saat formatı değilse (örn: boşluk veya başka yazıysa) atla
+                        # Saat formatı değilse satırı atla
                         if not saat or ":" not in saat:
                             continue
                             
@@ -105,12 +108,11 @@ def pdf_programi_oku(pdf_file):
                             if not hucre or hucre.lower() in ["none", "nan", ""]: 
                                 continue
                             
-                            # Hücre içini satırlarına böl (Oyuncu 1 \n Kategori \n Oyuncu 2)
+                            # Hücre içini böl (Oyuncu 1 \n Kategori \n Oyuncu 2)
                             satir_parcalari = [s.strip() for s in hucre.split('\n') if s.strip()]
                             
                             oyuncu1, oyuncu2, kategori = "Bilinmiyor", "Bilinmiyor", "Genel"
                             
-                            # TTF mantığında "Yaş", "T", "Ç", "Büyük" kelimeleri kategoriyi belli eder
                             kat_index = -1
                             for idx, p in enumerate(satir_parcalari):
                                 p_upper = p.upper()
@@ -124,7 +126,7 @@ def pdf_programi_oku(pdf_file):
                                 p1_kismi = satir_parcalari[:kat_index]
                                 p2_kismi = satir_parcalari[kat_index+1:]
                                 
-                                # Kulüp adlarını (Parantez içindeki metinleri) hakem ekranını yormamak için atıyoruz
+                                # Kulüp adlarını at
                                 oyuncu1 = " ".join([p for p in p1_kismi if not p.startswith("(")]) if p1_kismi else "Bilinmiyor 1"
                                 oyuncu2 = " ".join([p for p in p2_kismi if not p.startswith("(")]) if p2_kismi else "Bilinmiyor 2"
                             else:
@@ -144,7 +146,7 @@ def pdf_programi_oku(pdf_file):
                             })
                             
         if not tum_maclar:
-            return None, "Hata: PDF tabloları okunamadı. PDF TTF formatında olmayabilir."
+            return None, "Hata: PDF tabloları okunamadı. Program formatında olmayabilir."
             
         df = pd.DataFrame(tum_maclar)
         return df, "Başarılı"
@@ -165,11 +167,16 @@ FORMAT_SECENEKLERI = [
 yuklenen_pdf = st.file_uploader("TTF Maç Programı PDF Dosyasını Yükleyin", type=["pdf"])
 
 if yuklenen_pdf is not None:
-    with st.spinner("PDF Analiz Ediliyor..."):
+    with st.spinner("PDF Bütün Sütunlara Ayrılarak Analiz Ediliyor..."):
         df, mesaj = pdf_programi_oku(yuklenen_pdf)
     
     if df is not None:
         st.success(f"PDF başarıyla okundu! Toplam {len(df)} maç tespit edildi.")
+        
+        # Kullanıcıya tespit edilen kortları güven amaçlı listele
+        bulunan_kortlar = df['Kort'].unique().tolist()
+        st.info(f"📍 **Tespit Edilen Kortlar ({len(bulunan_kortlar)}):** {', '.join(bulunan_kortlar)}")
+        
         with st.expander("PDF'ten Çekilen ve Yapılandırılan Maç Listesini Gör"):
             st.dataframe(df)
         
