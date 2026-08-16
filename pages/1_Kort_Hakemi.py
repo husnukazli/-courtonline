@@ -69,7 +69,6 @@ def skor_cozumle(skor_str):
 
 def set_skoru_gecerli_mi(p1, p2, durum):
     if p1 == 0 and p2 == 0: return True
-    # Sadece durum "Bitti" ise tam set kurallarını uygula. Oynaniyor, Retired, Walkover durumlarında her türlü ara skora izin ver.
     if durum != "Bitti": return True
     
     valid_completed = [
@@ -129,6 +128,8 @@ else:
             aktif_kortlar = sorted(df_maclar["Kort"].unique())
             secilen_kort = st.selectbox("Kort Seçin", aktif_kortlar, key="kurulum_kort_sec")
             
+            st.divider() # Kort seçimi ile maç seçimi arası net boşluk/çizgi
+            
             kort_maclari = df_maclar[df_maclar["Kort"] == secilen_kort]
             mac_secenekleri = []
             for idx, row in kort_maclari.iterrows():
@@ -139,6 +140,9 @@ else:
                 
             if mac_secenekleri:
                 secilen_text = st.selectbox("Maç Seçin", [m[0] for m in mac_secenekleri], key="kurulum_mac_sec")
+                
+                st.divider() # Maç seçimi ile form/detaylar arası net boşluk/çizgi
+                
                 gercek_idx = next(m[1] for m in mac_secenekleri if m[0] == secilen_text)
                 secilen_mac = df_maclar.loc[gercek_idx]
                 
@@ -190,6 +194,7 @@ else:
                     df_maclar.loc[gercek_idx, "Kura_Kazanan"] = kura_kazanan
                     df_maclar.loc[gercek_idx, "Kura_Tercih"] = kura_tercih
                     df_maclar.loc[gercek_idx, "Saha_Tarafi"] = saha_tarafi
+                    df_maclar.loc[gercek_idx, "Son_Hakem"] = st.session_state.kullanici
                     
                     basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
                     if basarili: st.success("Maç kurulum bilgileri kaydedildi!")
@@ -292,6 +297,7 @@ else:
                                 df_maclar.loc[idx, "Kazanan"] = kazanan_secim
                                 df_maclar.loc[idx, "Skor"] = skor_metni
                                 df_maclar.loc[idx, "Bitis_Saati"] = bitis_saat_str
+                                df_maclar.loc[idx, "Son_Hakem"] = st.session_state.kullanici
                                 df_maclar.loc[idx, "sure_islendi"] = row.get("sure_islendi", False)
                                 
                                 basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
