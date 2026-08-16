@@ -53,77 +53,98 @@ def github_a_kaydet(veri, dosya_yolu):
         return False, str(e)
 
 def pdf_programi_oku(pdf_file):
-    """TTF Maç programı Matrisini (Kortlar yan yana) okuyup Düz Listeye çevirir."""
+    """TTF Maç programı PDF'ini (Tüm sayfalar ve ızgaralar) akıllıca okur."""
     tum_maclar = []
+    
     try:
         with pdfplumber.open(pdf_file) as pdf:
-            # Tüm sayfaları tek tek dolaşıyoruz
             for sayfa in pdf.pages:
+                # PDF tablolarını çek (Çizgi tabanlı arama)
                 tablolar = sayfa.extract_tables()
                 
+                # Eğer PDF'te çizgi yoksa metin koordinatlarıyla tablo oluşturmayı dene
+                if not tablolar or (tablolar and len(tablolar[0]) < 2):
+                    tablolar = sayfa.extract_tables({"vertical_strategy": "text", "horizontal_strategy": "text"})
+                
                 for tablo in tablolar:
-                    if not tablo or len(tablo) < 2: 
-                        continue
+                    if not tablo: continue
                     
-                    # İlk satır genelde Kort isimleridir (Örn: "Kort 1", "Kort 2")
-                    headers = [str(h).replace('\n', ' ').strip() if h else f"Sutun_{i}" for i, h in enumerate(tablo[0])]
+                    # 1. Aşama: Başlık Satırını Bul
+                    header_idx = -1
+                    for i, satir in enumerate(tablo):
+                        satir_metni = " ".join([str(h).lower() for h in satir if h])
+                        if "kort" in satir_metni or "toprak" in satir_metni or "sert" in satir_metni:
+                            header_idx = i
+                            break
+                            
+                    if header_idx == -1: continue
                     
-                    # 1. index'ten itibaren satırları okuyoruz (Saat dilimleri)
-                    for satir_idx in range(1, len(tablo)):
+                    headers = tablo[header_idx]
+                    if not headers[0] or str(headers[0]).strip() == "":
+                        headers[0] = "Saat"
+                        
+                    headers = [str(h).replace('\n', ' ').strip() if h else f"Sutun_{i}" for i, h in enumerate(headers)]
+                    
+                    # 2. Aşama: Maç Satırlarını Oku
+                    for satir_idx in range(header_idx + 1, len(tablo)):
                         satir = tablo[satir_idx]
                         if not satir: continue
                         
-                        # İlk sütun genelde Saattir (Örn: "09:00", "Takip Eden 1")
-                        saat = str(satir[0]).replace('\n', ' ').strip() if satir[0] else ""
+                        saat_hucre = str(satir[0]).strip() if satir[0] else ""
+                        saat = saat_hucre.split()[0] if saat_hucre else ""
                         
-                        # Yan yana olan Kort sütunlarını tarıyoruz
-                        for col_idx in range(1, len(headers)):
-                            if col_idx >= len(satir): break # Satır kısa bittiyse
+                        # Saat formatı değilse (örn: boşluk veya başka yazıysa) atla
+                        if not saat or ":" not in saat:
+                            continue
                             
+                        # 3. Aşama: Sütunlardaki (Kortlardaki) Maçları Ayrıştır
+                        for col_idx in range(1, min(len(headers), len(satir))):
                             kort_adi = headers[col_idx]
-                            hucre = str(satir[col_idx]).strip()
+                            hucre = str(satir[col_idx]).strip() if satir[col_idx] else ""
                             
-                            # Eğer kortta o saatte maç yoksa atla
                             if not hucre or hucre.lower() in ["none", "nan", ""]: 
                                 continue
                             
-                            # Hücre içini satırlarına bölüyoruz (Genelde O1 \n O2 \n Kategori şeklindedir)
-                            hucre_satirlari = [s.strip() for s in hucre.split('\n') if s.strip()]
+                            # Hücre içini satırlarına böl (Oyuncu 1 \n Kategori \n Oyuncu 2)
+                            satir_parcalari = [s.strip() for s in hucre.split('\n') if s.strip()]
                             
-                            oyuncu1 = "Bilinmiyor 1"
-                            oyuncu2 = "Bilinmiyor 2"
-                            kategori = "Genel"
+                            oyuncu1, oyuncu2, kategori = "Bilinmiyor", "Bilinmiyor", "Genel"
                             
-                            if len(hucre_satirlari) >= 3:
-                                oyuncu1 = hucre_satirlari[0]
-                                oyuncu2 = hucre_satirlari[1]
-                                kategori = hucre_satirlari[-1] # En alt satır genelde kategori (Örn: 10 Yaş T)
-                            elif len(hucre_satirlari) == 2:
-                                ilk = hucre_satirlari[0]
-                                if "-" in ilk:
-                                    bol = ilk.split("-")
-                                    oyuncu1, oyuncu2 = bol[0].strip(), bol[-1].strip()
-                                elif "/" in ilk:
-                                    bol = ilk.split("/")
-                                    oyuncu1, oyuncu2 = bol[0].strip(), bol[-1].strip()
-                                else:
-                                    oyuncu1 = ilk
-                                    oyuncu2 = ""
-                                kategori = hucre_satirlari[-1]
-                            elif len(hucre_satirlari) == 1:
-                                oyuncu1 = hucre_satirlari[0]
+                            # TTF mantığında "Yaş", "T", "Ç", "Büyük" kelimeleri kategoriyi belli eder
+                            kat_index = -1
+                            for idx, p in enumerate(satir_parcalari):
+                                p_upper = p.upper()
+                                if "YAŞ" in p_upper or "BÜYÜK" in p_upper or " KADIN" in p_upper or " ERKEK" in p_upper:
+                                    kat_index = idx
+                                    kategori = p
+                                    break
+                            
+                            if kat_index != -1:
+                                # Kategori bulundu: Üstündekiler O1, Altındakiler O2
+                                p1_kismi = satir_parcalari[:kat_index]
+                                p2_kismi = satir_parcalari[kat_index+1:]
                                 
-                            # Sistemin beklediği sözlük yapısı
+                                # Kulüp adlarını (Parantez içindeki metinleri) hakem ekranını yormamak için atıyoruz
+                                oyuncu1 = " ".join([p for p in p1_kismi if not p.startswith("(")]) if p1_kismi else "Bilinmiyor 1"
+                                oyuncu2 = " ".join([p for p in p2_kismi if not p.startswith("(")]) if p2_kismi else "Bilinmiyor 2"
+                            else:
+                                if len(satir_parcalari) >= 3:
+                                    oyuncu1, kategori, oyuncu2 = satir_parcalari[0], satir_parcalari[1], satir_parcalari[2]
+                                elif len(satir_parcalari) == 2:
+                                    oyuncu1, kategori = satir_parcalari[0], satir_parcalari[1]
+                                elif len(satir_parcalari) == 1:
+                                    oyuncu1 = satir_parcalari[0]
+                            
                             tum_maclar.append({
                                 "Kort": kort_adi,
                                 "Saat": saat,
-                                "Oyuncu 1": oyuncu1,
-                                "Oyuncu 2": oyuncu2,
-                                "Kategori": kategori
+                                "Oyuncu 1": oyuncu1.strip(),
+                                "Oyuncu 2": oyuncu2.strip(),
+                                "Kategori": kategori.strip()
                             })
-        
+                            
         if not tum_maclar:
-            return None, "Hata: PDF içinde okunabilir maç bilgisi bulunamadı."
+            return None, "Hata: PDF tabloları okunamadı. PDF TTF formatında olmayabilir."
             
         df = pd.DataFrame(tum_maclar)
         return df, "Başarılı"
@@ -144,7 +165,8 @@ FORMAT_SECENEKLERI = [
 yuklenen_pdf = st.file_uploader("TTF Maç Programı PDF Dosyasını Yükleyin", type=["pdf"])
 
 if yuklenen_pdf is not None:
-    df, mesaj = pdf_programi_oku(yuklenen_pdf)
+    with st.spinner("PDF Analiz Ediliyor..."):
+        df, mesaj = pdf_programi_oku(yuklenen_pdf)
     
     if df is not None:
         st.success(f"PDF başarıyla okundu! Toplam {len(df)} maç tespit edildi.")
@@ -155,7 +177,6 @@ if yuklenen_pdf is not None:
         st.subheader("⚙️ Kategori ve Format Eşleştirme")
         st.info("Kategorileri sistemdeki skor formatlarıyla eşleştirin. Sistem yaptığınız seçimleri hafızaya alacak ve yarınki PDF'te otomatik getirecektir.")
         
-        # Artık PDF tarayıcımız 'Kategori' adında net bir sütun üretiyor
         kategori_sutunu = "Kategori"
         benzersiz_kategoriler = df[kategori_sutunu].unique()
         
@@ -170,7 +191,7 @@ if yuklenen_pdf is not None:
             st.markdown("**Uygulanacak Skor Formatı (Kurallar)**")
             
         for i, kat in enumerate(benzersiz_kategoriler):
-            if not kat: continue
+            if not kat or kat == "Genel": continue
             
             c1, c2 = st.columns(2)
             with c1:
@@ -185,8 +206,10 @@ if yuklenen_pdf is not None:
         st.warning("⚠️ DİKKAT: 'Programı Onayla ve Kaydet' butonuna bastığınızda, sahadaki mevcut maç programı SIFIRLANACAK ve yerine bu PDF'teki maçlar yüklenecektir. Hakemler ve turnuva istatistikleri korunacaktır.")
         
         if st.button("✅ Programı Onayla ve Kort Hakemlerine Gönder", type="primary", use_container_width=True):
-            # Seçilen formatları DataFrame'e entegre et
             df["Skor_Formati"] = df[kategori_sutunu].map(yeni_hafiza)
+            
+            # Boş veya hatalı kategori eşleşmelerini varsayılanla doldur
+            df["Skor_Formati"] = df["Skor_Formati"].fillna(FORMAT_SECENEKLERI[0])
             
             # Kort Hakeminin ihtiyaç duyduğu boş sütunları tanımla
             df["Durum"] = "Baslamadi"
