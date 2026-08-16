@@ -80,7 +80,7 @@ def pdf_programi_oku_koordinat(pdf_file):
                 for i, row in enumerate(rows):
                     text_in_row = " ".join([w['text'].upper() for w in row])
                     if any(kw in text_in_row for kw in court_keywords):
-                        if any(char.isdigit() for char in text_in_row):
+                        if any(char.isdigit() for char in text_in_row) or "KAPALI" in text_in_row or "AÇIK" in text_in_row:
                             header_row_idx = i
                             break
 
@@ -105,6 +105,21 @@ def pdf_programi_oku_koordinat(pdf_file):
                         current_col_x1 = w['x1']
                 columns.append({"name": current_col_text, "x0": current_col_x0, "x1": current_col_x1})
 
+                # YAMA: Aynı isimli kort başlıklarını benzersiz numaralarla etiketleme
+                name_counts = {}
+                for col in columns:
+                    base = col['name'].strip()
+                    name_counts[base] = name_counts.get(base, 0) + 1
+                
+                seen = {}
+                for col in columns:
+                    base = col['name'].strip()
+                    seen[base] = seen.get(base, 0) + 1
+                    if name_counts[base] > 1:
+                        col['unique_name'] = f"{base} ({seen[base]})"
+                    else:
+                        col['unique_name'] = base
+
                 for i in range(len(columns)):
                     if i < len(columns) - 1:
                         columns[i]['limit_x'] = (columns[i]['x1'] + columns[i+1]['x0']) / 2
@@ -115,21 +130,22 @@ def pdf_programi_oku_koordinat(pdf_file):
                 for row in rows[header_row_idx+1:]:
                     data_words.extend(row)
 
-                col_data = {col['name']: [] for col in columns}
+                # Sözlüğü artık "unique_name" (Örn: KAPALI KORT (1)) üzerinden kuruyoruz
+                col_data = {col['unique_name']: [] for col in columns}
 
                 for w in data_words:
                     center_x = (w['x0'] + w['x1']) / 2
                     assigned = False
                     for col in columns:
                         if center_x < col['limit_x']:
-                            col_data[col['name']].append(w)
+                            col_data[col['unique_name']].append(w)
                             assigned = True
                             break
                     if not assigned and columns:
-                        col_data[columns[-1]['name']].append(w)
+                        col_data[columns[-1]['unique_name']].append(w)
 
                 for col in columns:
-                    c_name = col['name']
+                    c_name = col['unique_name']
                     c_words = col_data[c_name]
                     if not c_words: continue
 
@@ -228,7 +244,7 @@ FORMAT_SECENEKLERI = [
 yuklenen_pdf = st.file_uploader("TTF Maç Programı PDF Dosyasını Yükleyin", type=["pdf"])
 
 if yuklenen_pdf is not None:
-    with st.spinner("🚀 Koordinat Bazlı TTF Yapay Zeka Motoru Çalışıyor..."):
+    with st.spinner("🚀 Koordinat Bazlı TTF Veri Motoru Çalışıyor..."):
         df, mesaj = pdf_programi_oku_koordinat(yuklenen_pdf)
     
     if df is not None:
