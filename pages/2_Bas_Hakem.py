@@ -147,7 +147,6 @@ else:
 
     st.divider()
 
-    # --- 1. SAYFA: KORT AKIŞI (VARSAYILAN) ---
     if st.session_state.bashakem_sayfa == "Akis":
         col_zoom1, _ = st.columns([2, 8])
         with col_zoom1:
@@ -158,7 +157,6 @@ else:
             .stApp {{
                 zoom: {zoom_seviyesi}%;
             }}
-            /* Kortların blok halinde sola/sağa yumuşakça kayması için kapsayıcı ayarı */
             @media (max-width: 768px) {{
                 [data-testid="stHorizontalBlock"] {{
                     display: flex !important;
@@ -244,7 +242,7 @@ else:
                                 k_tercih = mac.get("Kura_Tercih", "-")
                                 s_tarafi = mac.get("Saha_Tarafi", "-")
                                 
-                                kazanan = kazanan_kim(skor) if durum == "Bitti" else None
+                                kazanan = kazanan_kim(skor) if durum in ["Bitti", "Hükmen"] else None
                                 if kazanan == 1:
                                     p1_style = "color: #ffffff; font-weight: bold;"
                                     p2_style = "color: #666666;"
@@ -265,10 +263,14 @@ else:
                                     durum_str = "DEVAM"
                                     durum_style = "color: #00FF66; font-weight: bold;"
                                     skor_style = "color: #00FF66; font-weight: bold; font-size: 16px;"
-                                elif durum == "Bitti":
-                                    durum_str = "BITTI"
+                                elif durum in ["Bitti", "Hükmen"]:
+                                    durum_str = durum.upper()
                                     durum_style = "color: #FF1744; font-weight: bold;"
                                     skor_style = "color: #FF1744; font-weight: bold; font-size: 13px;"
+                                elif durum == "Yarım Kaldı":
+                                    durum_str = "YARIM"
+                                    durum_style = "color: #FFEA00; font-weight: bold;"
+                                    skor_style = "color: #FFEA00; font-weight: bold; font-size: 13px;"
                                 else:
                                     durum_str = "Bekliyor"
                                     durum_style = "color: #888888;"
@@ -306,7 +308,6 @@ else:
         else:
             st.info("Sistemde kayitli mac programi yok. Yonetim panelinden PDF yukleyebilirsiniz.")
 
-    # --- 2. SAYFA: YÖNETİM PANELİ VE İSTATİSTİKLER ---
     elif st.session_state.bashakem_sayfa == "Yonetim":
         st.subheader("Turnuva Yonetim ve İstatistik Paneli")
         
@@ -314,7 +315,7 @@ else:
         if program_data:
             df_stat = pd.DataFrame(program_data)
             toplam_mac = len(df_stat)
-            biten_mac = len(df_stat[df_stat["Durum"] == "Bitti"])
+            biten_mac = len(df_stat[df_stat["Durum"].isin(["Bitti", "Hükmen"])])
             devam_eden = len(df_stat[df_stat["Durum"] == "Oynaniyor"])
             baslamayan = len(df_stat[df_stat["Durum"] == "Baslamadi"])
             oran = int((biten_mac / toplam_mac * 100)) if toplam_mac > 0 else 0
@@ -325,7 +326,7 @@ else:
                 sureler.extend(istatistikler["sureler"])
             
             for _, row in df_stat.iterrows():
-                if row.get("Durum") == "Bitti":
+                if row.get("Durum") in ["Bitti", "Hükmen"]:
                     b_saat = row.get("Baslangic_Saati", "")
                     bit_saat = row.get("Bitis_Saati", "")
                     if b_saat and bit_saat and b_saat != "Secilmedi" and bit_saat != "Secilmedi":
@@ -357,6 +358,7 @@ else:
                 
             st.divider()
 
+        # Hakem Yönetimi (Ekleme ve Silme / Temizleme Özellikli)
         st.markdown("### Hakem Yonetimi")
         kayitli_hakemler = githubdan_veri_getir("hakemler.json")
         if not isinstance(kayitli_hakemler, dict):
@@ -381,8 +383,19 @@ else:
                 
         if kayitli_hakemler:
             st.write("Sistemde Kayitli Hakemler:")
-            df_hakem = pd.DataFrame(list(kayitli_hakemler.items()), columns=["Kullanici Adi", "Sifre"])
-            st.dataframe(df_hakem, use_container_width=True)
+            for hakem_adi in list(kayitli_hakemler.keys()):
+                col_n, col_s = st.columns([5, 1])
+                with col_n:
+                    st.text(f"• {hakem_adi}")
+                with col_s:
+                    if st.button("Sil", key=f"sil_h_{hakem_adi}"):
+                        del kayitli_hakemler[hakem_adi]
+                        basarili, mesaj = github_a_kaydet(kayitli_hakemler, "hakemler.json")
+                        if basarili:
+                            st.success(f"'{hakem_adi}' silindi.")
+                            st.rerun()
+                        else:
+                            st.error(mesaj)
 
         st.divider()
 
