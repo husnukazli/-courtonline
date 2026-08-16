@@ -5,10 +5,10 @@ import base64
 import json
 from datetime import datetime, timezone, timedelta
 
-# Sayfa yapılandırması
+# --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Kort Hakemi", layout="centered")
 
-# --- MOBİL KLAVYE ENGELLEME VE GÖRSEL AYARLAR ---
+# --- MOBİL KLAVYE VE GÖRSEL AYARLAR (JS ENJEKSİYONU) ---
 st.markdown("""
 <script>
 document.addEventListener('focusin', function(e) {
@@ -18,7 +18,8 @@ document.addEventListener('focusin', function(e) {
 });
 </script>
 <style>
-/* Klavye tetiklemesini engelleme */
+/* Klavye tetiklemesini engellemek için */
+input { caret-color: transparent !important; }
 div[data-baseweb="input"] input { height: 48px !important; font-size: 20px !important; font-weight: bold !important; text-align: center !important; }
 button[data-baseweb="button"] { height: 38px !important; width: 38px !important; }
 </style>
@@ -28,7 +29,6 @@ st.title("Kort Hakemi Paneli")
 
 # --- YARDIMCI FONKSİYONLAR ---
 
-# TR saatine göre en yakın 5 dk'lık listeyi bulma
 def get_current_time_index(saat_listesi):
     try:
         TRT = timezone(timedelta(hours=3))
@@ -37,11 +37,10 @@ def get_current_time_index(saat_listesi):
         target = f"{simdi.hour:02d}:{yeni_dk:02d}"
         if target in saat_listesi:
             return saat_listesi.index(target)
-    except:
+    except Exception as e:
         pass
     return 0
 
-# Sabit saat listesi oluşturma
 SAAT_LISTESI = ["Secilmedi"] + [f"{h:02d}:{m:02d}" for h in range(7, 23) for m in range(0, 60, 5)]
 CURRENT_TIME_IDX = get_current_time_index(SAAT_LISTESI)
 
@@ -75,13 +74,13 @@ def github_a_kaydet(veri_listesi, dosya_yolu):
         icerik_json = json.dumps(veri_listesi, indent=4, ensure_ascii=False)
         icerik_b64 = base64.b64encode(icerik_json.encode('utf-8')).decode('utf-8')
         
-        payload = {"message": "Skor guncelleme", "content": icerik_b64}
+        payload = {"message": "Güncelleme", "content": icerik_b64}
         if sha:
             payload["sha"] = sha
             
         cevap_put = requests.put(url, headers=headers, json=payload)
         if cevap_put.status_code in [200, 201]:
-            return True, "Basarili"
+            return True, "Başarılı"
         else:
             return False, cevap_put.text
     except Exception as e:
@@ -100,36 +99,29 @@ def skor_cozumle(skor_str):
     except: pass
     return sets
 
-def set_skoru_gecerli_mi(p1, p2, durum):
-    if p1 == 0 and p2 == 0: return True
-    if durum != "Bitti": return True
-    valid_completed = [(6,0),(6,1),(6,2),(6,3),(6,4),(0,6),(1,6),(2,6),(3,6),(4,6),(7,5),(7,6),(5,7),(6,7)]
-    return (p1, p2) in valid_completed
-
-# --- UYGULAMA MANTIĞI ---
-
+# --- OTURUM YÖNETİMİ ---
 hakem_verileri = githubdan_veri_getir("hakemler.json") or {}
 
 if "hakem_giris" not in st.session_state: st.session_state.hakem_giris = False
 if "hakem_mod" not in st.session_state: st.session_state.hakem_mod = "kurulum"
 
 if not st.session_state.hakem_giris:
-    st.subheader("Hakem Giris")
-    kullanici_adi = st.selectbox("Hakem İsminizi Secin", [""] + list(hakem_verileri.keys()))
-    sifre = st.text_input("Sifre", type="password")
-    if st.button("Giris Yap"):
+    st.subheader("Hakem Giriş")
+    kullanici_adi = st.selectbox("Hakem İsminizi Seçin", [""] + list(hakem_verileri.keys()))
+    sifre = st.text_input("Şifre", type="password")
+    if st.button("Giriş Yap"):
         if kullanici_adi and hakem_verileri.get(kullanici_adi) == sifre:
             st.session_state.hakem_giris = True
             st.session_state.kullanici = kullanici_adi
             st.rerun()
         else:
-            st.error("Hatali bilgi.")
+            st.error("Hatalı bilgi.")
 else:
     # GÖREV ALANI
     col_h1, col_h2 = st.columns([7, 3])
-    with col_h1: st.write(f"Gorevli Hakem: **{st.session_state.kullanici}**")
+    with col_h1: st.write(f"Görevli Hakem: **{st.session_state.kullanici}**")
     with col_h2:
-        if st.button("⬅️ Cikis"):
+        if st.button("⬅️ Çıkış"):
             st.session_state.hakem_giris = False
             st.rerun()
     st.divider()
@@ -160,89 +152,110 @@ else:
             
             kort_maclari = df_maclar[df_maclar["Kort"] == secilen_kort]
             mac_secenekleri = []
-            default_index = 0
             
+            # Tüm maçları listeye ekle
             for idx, row in kort_maclari.iterrows():
                 durum = row.get('Durum', 'Baslamadi')
                 label = f"{row['Saat']} | {row['Oyuncu 1']} vs {row['Oyuncu 2']} [{durum}]"
                 mac_secenekleri.append((label, idx))
-                # Başlamamış ilk maçı otomatik yakala
-                if durum == "Baslamadi" and default_index == 0:
-                    default_index = len(mac_secenekleri) - 1
             
             if mac_secenekleri:
-                secilen_label = st.selectbox("Maç Seçin", [m[0] for m in mac_secenekleri], index=default_index, key="kurulum_mac_sec")
+                # Otomatik olarak 'Baslamadi' olan ilk maçı bul
+                default_idx = next((i for i, m in enumerate(mac_secenekleri) if "Baslamadi" in m[0]), 0)
+                
+                secilen_label = st.selectbox("Maç Seçin", [m[0] for m in mac_secenekleri], index=default_idx, key="kurulum_mac_sec")
                 st.divider()
                 
                 gercek_idx = next(m[1] for m in mac_secenekleri if m[0] == secilen_label)
                 secilen_mac = df_maclar.loc[gercek_idx]
                 
-                st.markdown(f"**Maç:** {secilen_mac['Oyuncu 1']} vs {secilen_mac['Oyuncu 2']}")
+                st.markdown(f"**{secilen_mac['Oyuncu 1']} vs {secilen_mac['Oyuncu 2']}**")
                 
-                yeni_durum = st.selectbox("Durum", ["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"], 
-                                          index=["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"].index(secilen_mac.get("Durum", "Baslamadi")))
+                yeni_durum = st.selectbox("Maç Durumu", ["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"], 
+                                          index=["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"].index(secilen_mac.get("Durum", "Baslamadi")), key=f"kur_d_{gercek_idx}")
                 
-                kazanan_secim = secilen_mac.get("Kazanan", "Secilmedi")
-                if yeni_durum in ["Walkover", "Retired"]:
-                    kazanan_secim = st.selectbox("Maçı Kazanan", ["Secilmedi", secilen_mac['Oyuncu 1'], secilen_mac['Oyuncu 2']], 
-                                                 index=["Secilmedi", secilen_mac['Oyuncu 1'], secilen_mac['Oyuncu 2']].index(kazanan_secim) if kazanan_secim in ["Secilmedi", secilen_mac['Oyuncu 1'], secilen_mac['Oyuncu 2']] else 0)
+                # Kurumsal Özellikler - AÇIK VE DETAYLI
+                kaz_ops = ["Secilmedi", secilen_mac['Oyuncu 1'], secilen_mac['Oyuncu 2']]
+                kura_val = secilen_mac.get("Kura_Kazanan", "Secilmedi")
+                kura_kazanan = st.selectbox("Kura Kazanan", kaz_ops, index=kaz_ops.index(kura_val) if kura_val in kaz_ops else 0, key=f"k_kaz_{gercek_idx}")
+                
+                tercih_ops = ["Secilmedi", "Servis", "Karşılama", "Kort Seçimi"]
+                ter_val = secilen_mac.get("Kura_Tercih", "Secilmedi")
+                kura_tercih = st.selectbox("Kura Tercihi", tercih_ops, index=tercih_ops.index(ter_val) if ter_val in tercih_ops else 0, key=f"k_ter_{gercek_idx}")
+                
+                saha_ops = ["Secilmedi", "Sandalyenin Sağı", "Sandalyenin Solu"]
+                tar_val = secilen_mac.get("Saha_Tarafi", "Secilmedi")
+                saha_tarafi = st.selectbox("Saha Tarafı", saha_ops, index=saha_ops.index(tar_val) if tar_val in saha_ops else 0, key=f"k_tar_{gercek_idx}")
 
                 # Saat Seçiciler
-                bas_idx = SAAT_LISTESI.index(secilen_mac.get("Baslangic_Saati", "")) if secilen_mac.get("Baslangic_Saati") in SAAT_LISTESI else CURRENT_TIME_IDX
-                baslangic_saati = st.selectbox("Başlama Saati", SAAT_LISTESI, index=bas_idx)
+                m_bas = secilen_mac.get("Baslangic_Saati", "")
+                m_bit = secilen_mac.get("Bitis_Saati", "")
                 
-                bit_idx = SAAT_LISTESI.index(secilen_mac.get("Bitis_Saati", "")) if secilen_mac.get("Bitis_Saati") in SAAT_LISTESI else 0
-                bitis_saati = st.selectbox("Bitiş Saati", SAAT_LISTESI, index=bit_idx)
-
+                bas_idx = SAAT_LISTESI.index(m_bas) if m_bas in SAAT_LISTESI else CURRENT_TIME_IDX
+                bit_idx = SAAT_LISTESI.index(m_bit) if m_bit in SAAT_LISTESI else 0
+                
+                baslangic_saati = st.selectbox("Başlama Saati", SAAT_LISTESI, index=bas_idx, key=f"bas_{gercek_idx}")
+                bitis_saati = st.selectbox("Bitiş Saati", SAAT_LISTESI, index=bit_idx, key=f"bit_{gercek_idx}")
+                
                 if st.button("Kurulumu Kaydet", type="primary"):
                     df_maclar.loc[gercek_idx, "Durum"] = yeni_durum
-                    df_maclar.loc[gercek_idx, "Kazanan"] = kazanan_secim
+                    df_maclar.loc[gercek_idx, "Kura_Kazanan"] = kura_kazanan
+                    df_maclar.loc[gercek_idx, "Kura_Tercih"] = kura_tercih
+                    df_maclar.loc[gercek_idx, "Saha_Tarafi"] = saha_tarafi
                     df_maclar.loc[gercek_idx, "Baslangic_Saati"] = baslangic_saati if baslangic_saati != "Secilmedi" else ""
                     df_maclar.loc[gercek_idx, "Bitis_Saati"] = bitis_saati if bitis_saati != "Secilmedi" else ""
                     df_maclar.loc[gercek_idx, "Son_Hakem"] = st.session_state.kullanici
                     
                     basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
-                    if basarili: st.success("Kaydedildi!")
-                    else: st.error(mesaj)
+                    if basarili:
+                        st.success("Maç kurulum bilgileri kaydedildi!")
+                    else:
+                        st.error(mesaj)
             else:
-                st.info("Kortta maç yok.")
+                st.info("Bu kortta maç bulunmuyor.")
 
-        # --- SKOR GİRİŞ PANELİ ---
+        # --- SKOR PANELİ ---
         elif st.session_state.hakem_mod == "skor":
-            st.subheader("Aktif Maçlar")
-            aktif_maclar = df_maclar[df_maclar["Durum"] == "Oynaniyor"]
+            st.subheader("Aktif Maçlar Skor Girişi")
+            aktif = df_maclar[df_maclar["Durum"] == "Oynaniyor"]
             
-            if aktif_maclar.empty:
-                st.info("Aktif maç bulunamadı.")
+            if aktif.empty:
+                st.info("Şu an devam eden maç bulunmuyor.")
             else:
-                for idx, row in aktif_maclar.iterrows():
+                for idx, row in aktif.iterrows():
                     st.markdown(f"""
                     <div style="background-color: #1a1a1a; border-left: 6px solid #00FF66; padding: 10px 14px; margin-top: 12px; border-radius: 6px;">
                         <span style="color: #ffffff; font-weight: bold;">{row['Kort'].upper()} | {row['Oyuncu 1']} vs {row['Oyuncu 2']}</span>
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    with st.expander("⚙️ Skor Güncelle"):
+                    with st.expander("⚙️ Detaylar ve Skor Güncelle"):
                         mevcut_skorlar = skor_cozumle(row.get("Skor", "-"))
+                        
                         yeni_d = st.selectbox("Durum", ["Oynaniyor", "Retired", "Bitti", "Walkover"], index=["Oynaniyor", "Retired", "Bitti", "Walkover"].index(row.get("Durum", "Oynaniyor")), key=f"d_{idx}")
                         
                         kaz_ops = ["Secilmedi", row['Oyuncu 1'], row['Oyuncu 2']]
-                        kazanan = st.selectbox("Kazanan", kaz_ops, index=0, key=f"k_{idx}") if yeni_d in ["Walkover", "Retired"] else "Secilmedi"
+                        kaz_val = row.get("Kazanan", "Secilmedi")
+                        kazanan = st.selectbox("Kazanan", kaz_ops, index=kaz_ops.index(kaz_val) if kaz_val in kaz_ops else 0, key=f"k_{idx}") if yeni_d in ["Retired", "Walkover"] else "Secilmedi"
                         
                         s1p1 = st.number_input(f"{row['Oyuncu 1']} (Set 1)", 0, 7, mevcut_skorlar["s1_p1"], key=f"s1p1_{idx}")
                         s1p2 = st.number_input(f"{row['Oyuncu 2']} (Set 1)", 0, 7, mevcut_skorlar["s1_p2"], key=f"s1p2_{idx}")
+                        s2p1 = st.number_input(f"{row['Oyuncu 1']} (Set 2)", 0, 7, mevcut_skorlar["s2_p1"], key=f"s2p1_{idx}")
+                        s2p2 = st.number_input(f"{row['Oyuncu 2']} (Set 2)", 0, 7, mevcut_skorlar["s2_p2"], key=f"s2p2_{idx}")
                         
-                        bitis_val = st.selectbox("Bitiş Saati", SAAT_LISTESI, index=0, key=f"b_{idx}")
+                        bit_val = st.selectbox("Bitiş Saati", SAAT_LISTESI, index=0, key=f"b_{idx}")
                         
                         if st.button("Skoru Kaydet", key=f"btn_{idx}", type="primary"):
                             df_maclar.loc[idx, "Durum"] = yeni_d
                             df_maclar.loc[idx, "Kazanan"] = kazanan
-                            df_maclar.loc[idx, "Skor"] = f"{s1p1}/{s1p2}"
-                            df_maclar.loc[idx, "Bitis_Saati"] = bitis_val if bitis_val != "Secilmedi" else ""
+                            df_maclar.loc[idx, "Skor"] = f"{s1p1}/{s1p2} {s2p1}/{s2p2}"
+                            df_maclar.loc[idx, "Bitis_Saati"] = bit_val if bit_val != "Secilmedi" else ""
                             df_maclar.loc[idx, "Son_Hakem"] = st.session_state.kullanici
                             
-                            basarili, msg = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
-                            if basarili: st.success("Güncellendi!")
-                            else: st.error(msg)
+                            basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
+                            if basarili:
+                                st.success("Güncellendi!")
+                            else:
+                                st.error(mesaj)
     else:
         st.warning("Program verisi çekilemedi.")
