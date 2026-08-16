@@ -54,13 +54,22 @@ def github_a_kaydet(veri, dosya_yolu):
         return False, str(e)
 
 def resmi_ai_ile_oku(resim_dosyasi):
-    """Görüntüyü Google Gemini Flash API'sine gönderip JSON formatında maç listesi alır."""
+    """Görüntüyü Google Gemini API'sine gönderir ve desteklenen modeli otomatik bulup okuma yapar."""
     try:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
         
-        # Kararlı ve hızlı görsel işleme modeli
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # ÇÖZÜM: Hesabının desteklediği aktif modeli otomatik tespit et (404 hatasını bitirir)
+        uygun_model = None
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                if 'flash' in m.name.lower() or 'pro' in m.name.lower():
+                    uygun_model = m.name
+                    break
         
+        if not uygun_model:
+            return None, "Hata: Hesabınızda içerik üretebilecek uygun bir Gemini modeli bulunamadı."
+            
+        model = genai.GenerativeModel(uygun_model)
         img = Image.open(resim_dosyasi)
         
         prompt = """
@@ -109,7 +118,7 @@ if yuklenen_resim is not None:
     st.image(yuklenen_resim, caption="Yüklenen Tablo", use_container_width=True)
     
     if st.button("🤖 Yapay Zeka ile Tabloyu Çözümle", type="primary"):
-        with st.spinner("Gemini Flash tabloyu inceliyor... Lütfen bekleyin."):
+        with st.spinner("Gemini aktif modeli bularak tabloyu inceliyor... Lütfen bekleyin."):
             df, mesaj = resmi_ai_ile_oku(yuklenen_resim)
             
             if df is not None:
