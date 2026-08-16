@@ -3,11 +3,12 @@ import pandas as pd
 import requests
 import base64
 import json
-import anthropic
+import google.generativeai as genai
+from PIL import Image
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Fotoğraftan Program Yükleme", layout="wide")
-st.title("📸 Fotoğraftan Maç Programı Yükleme (AI Destekli)")
+st.title("📸 Fotoğraftan Maç Programı Yükleme (Gemini AI Destekli)")
 
 # --- YARDIMCI FONKSİYONLAR ---
 def githubdan_veri_getir(dosya_yolu):
@@ -53,19 +54,14 @@ def github_a_kaydet(veri, dosya_yolu):
         return False, str(e)
 
 def resmi_ai_ile_oku(resim_dosyasi):
-    """Görüntüyü Anthropic Claude API'sine gönderip JSON formatında maç listesi alır."""
+    """Görüntüyü Google Gemini API'sine gönderip JSON formatında maç listesi alır."""
     try:
-        # Resmi Streamlit'in UploadedFile formatından güvenli şekilde byte olarak al
-        resim_bytes = resim_dosyasi.getvalue()
-        resim_b64 = base64.b64encode(resim_bytes).decode("utf-8")
+        # Gemini API Ayarları
+        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+        model = genai.GenerativeModel('gemini-1.5-pro')
         
-        # Dosya tipini belirle
-        media_type = "image/jpeg"
-        if resim_dosyasi.name.lower().endswith(".png"):
-            media_type = "image/png"
-            
-        # Claude API'ye bağlan
-        client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
+        # Resmi Streamlit'ten PIL formatına çevir
+        img = Image.open(resim_dosyasi)
         
         prompt = """
         Bu görsel bir tenis turnuvası maç programıdır. Lütfen bu tabloyu çok dikkatli incele ve maçları tespit et.
@@ -83,31 +79,10 @@ def resmi_ai_ile_oku(resim_dosyasi):
         ]
         """
         
-        response = client.messages.create(
-            model="claude-3-5-sonnet-20240620",
-            max_tokens=4096,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": media_type,
-                                "data": resim_b64,
-                            },
-                        },
-                        {"type": "text", "text": prompt}
-                    ],
-                }
-            ],
-        )
+        response = model.generate_content([prompt, img])
+        json_metni = response.text.strip()
         
-        # Yanıtı temizle ve JSON'a çevir
-        json_metni = response.content[0].text.strip()
-        
-        # Eğer Claude fazladan markdown eklediyse temizle
+        # Eğer Gemini fazladan markdown eklediyse temizle
         if json_metni.startswith("```json"):
             json_metni = json_metni[7:-3]
         elif json_metni.startswith("```"):
@@ -132,11 +107,10 @@ FORMAT_SECENEKLERI = [
 yuklenen_resim = st.file_uploader("Maç Programının Ekran Görüntüsünü (PNG/JPG) Yükleyin", type=["png", "jpg", "jpeg"])
 
 if yuklenen_resim is not None:
-    # use_column_width DEĞİL, use_container_width kullanılmalı
     st.image(yuklenen_resim, caption="Yüklenen Tablo", use_container_width=True)
     
     if st.button("🤖 Yapay Zeka ile Tabloyu Çözümle", type="primary"):
-        with st.spinner("Claude 3.5 Sonnet tabloyu piksel piksel inceliyor... Lütfen bekleyin."):
+        with st.spinner("Gemini 1.5 Pro tabloyu piksel piksel inceliyor... Lütfen bekleyin."):
             df, mesaj = resmi_ai_ile_oku(yuklenen_resim)
             
             if df is not None:
@@ -201,7 +175,7 @@ if "temp_df" in st.session_state:
         if basarili_mac and basarili_hafiza:
             st.success("🎉 Maç programı sisteme başarıyla yüklendi!")
             st.balloons()
-            del st.session_state.temp_df
+            del st.session_state.temp_df 
         else:
             if not basarili_mac: st.error(f"Maç programı kaydedilirken hata: {msg_mac}")
             if not basarili_hafiza: st.error(f"Hafıza kaydedilirken hata: {msg_hafiza}")
