@@ -9,7 +9,6 @@ from datetime import datetime, timezone, timedelta
 st.set_page_config(page_title="Kort Hakemi", layout="centered")
 
 # --- MOBİL KLAVYE VE GÖRSEL AYARLAR (JS ENJEKSİYONU) ---
-# Üst boşluk daraltma yaması mevcut style blokunun içine eklendi
 st.markdown("""
 <script>
 document.addEventListener('focusin', function(e) {
@@ -126,7 +125,6 @@ if not st.session_state.hakem_giris:
         else:
             st.error("Hatalı bilgi.")
 else:
-    # GÖREV ALANI
     col_h1, col_h2 = st.columns([7, 3])
     with col_h1: st.write(f"Görevli Hakem: **{st.session_state.kullanici}**")
     with col_h2:
@@ -135,7 +133,6 @@ else:
             st.rerun()
     st.divider()
     
-    # MOD SEÇİMİ
     col_t1, col_t2 = st.columns(2)
     with col_t1:
         if st.button("🎾 Maç Kurulum", use_container_width=True, type="primary" if st.session_state.hakem_mod == "kurulum" else "secondary"):
@@ -168,9 +165,7 @@ else:
                 mac_secenekleri.append((label, idx))
             
             if mac_secenekleri:
-                # Otomatik olarak 'Baslamadi' olan ilk maçı bul
                 default_idx = next((i for i, m in enumerate(mac_secenekleri) if "Baslamadi" in m[0]), 0)
-                
                 secilen_label = st.selectbox("Maç Seçin", [m[0] for m in mac_secenekleri], index=default_idx, key="kurulum_mac_sec")
                 st.divider()
                 
@@ -182,7 +177,6 @@ else:
                 yeni_durum = st.selectbox("Maç Durumu", ["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"], 
                                           index=["Baslamadi", "Oynaniyor", "Retired", "Bitti", "Walkover"].index(secilen_mac.get("Durum", "Baslamadi")), key=f"kur_d_{gercek_idx}")
                 
-                # Kurumsal Özellikler
                 kaz_ops = ["Secilmedi", secilen_mac['Oyuncu 1'], secilen_mac['Oyuncu 2']]
                 kura_val = secilen_mac.get("Kura_Kazanan", "Secilmedi")
                 kura_kazanan = st.selectbox("Kura Kazanan", kaz_ops, index=kaz_ops.index(kura_val) if kura_val in kaz_ops else 0, key=f"k_kaz_{gercek_idx}")
@@ -195,7 +189,6 @@ else:
                 tar_val = secilen_mac.get("Saha_Tarafi", "Secilmedi")
                 saha_tarafi = st.selectbox("Saha Tarafı", saha_ops, index=saha_ops.index(tar_val) if tar_val in saha_ops else 0, key=f"k_tar_{gercek_idx}")
 
-                # Saat Seçiciler
                 m_bas = secilen_mac.get("Baslangic_Saati", "")
                 m_bit = secilen_mac.get("Bitis_Saati", "")
                 
@@ -210,7 +203,10 @@ else:
                         yeni_durum, kura_kazanan, kura_tercih, saha_tarafi, (baslangic_saati if baslangic_saati != "Secilmedi" else ""), (bitis_saati if bitis_saati != "Secilmedi" else ""), st.session_state.kullanici
                     ]
                     basarili, mesaj = github_a_kaydet(df_maclar.to_dict(orient="records"), "mac_programi.json")
-                    if basarili: st.success("Kaydedildi!") else: st.error(mesaj)
+                    if basarili:
+                        st.success("Kaydedildi!")
+                    else:
+                        st.error(mesaj)
             else:
                 st.info("Bu kortta maç bulunmuyor.")
 
@@ -223,9 +219,11 @@ else:
                 st.info("Şu an devam eden maç bulunmuyor.")
             else:
                 for idx, row in aktif.iterrows():
+                    format_bilgisi = row.get("Skor_Formati", "3 Normal Set")
                     st.markdown(f"""
                     <div style="background-color: #1a1a1a; border-left: 6px solid #00FF66; padding: 10px 14px; margin-top: 12px; border-radius: 6px;">
-                        <span style="color: #ffffff; font-weight: bold;">{row['Kort'].upper()} | {row['Oyuncu 1']} vs {row['Oyuncu 2']}</span>
+                        <span style="color: #ffffff; font-weight: bold;">{row['Kort'].upper()} | {row['Oyuncu 1']} vs {row['Oyuncu 2']}</span><br>
+                        <span style="color: #B2FF59; font-size: 13px;">Format: {format_bilgisi}</span>
                     </div>
                     """, unsafe_allow_html=True)
                     
@@ -238,12 +236,32 @@ else:
                         kaz_val = row.get("Kazanan", "Secilmedi")
                         kazanan = st.selectbox("Kazanan", kaz_ops, index=kaz_ops.index(kaz_val) if kaz_val in kaz_ops else 0, key=f"k_{idx}") if yeni_d in ["Retired", "Walkover"] else "Secilmedi"
                         
-                        s1p1 = st.number_input(f"{row['Oyuncu 1']} (Set 1)", 0, 7, mevcut_skorlar["s1_p1"], key=f"s1p1_{idx}")
-                        s1p2 = st.number_input(f"{row['Oyuncu 2']} (Set 1)", 0, 7, mevcut_skorlar["s1_p2"], key=f"s1p2_{idx}")
-                        s2p1 = st.number_input(f"{row['Oyuncu 1']} (Set 2)", 0, 7, mevcut_skorlar["s2_p1"], key=f"s2p1_{idx}")
-                        s2p2 = st.number_input(f"{row['Oyuncu 2']} (Set 2)", 0, 7, mevcut_skorlar["s2_p2"], key=f"s2p2_{idx}")
-                        s3p1 = st.number_input(f"{row['Oyuncu 1']} (Set 3)", 0, 7, mevcut_skorlar["s3_p1"], key=f"s3p1_{idx}")
-                        s3p2 = st.number_input(f"{row['Oyuncu 2']} (Set 3)", 0, 7, mevcut_skorlar["s3_p2"], key=f"s3p2_{idx}")
+                        # FORMATLARA GÖRE SKOR GİRİŞ DENETİMİ
+                        s1_max, s2_max, s3_max = 7, 7, 7
+                        
+                        if "3 Kısa Set" in format_bilgisi:
+                            s1_max, s2_max, s3_max = 5, 5, 5
+                        elif "3 Normal Set" in format_bilgisi:
+                            s1_max, s2_max, s3_max = 7, 7, 7
+                        elif "2 Normal Set" in format_bilgisi and "Tie-Break" in format_bilgisi:
+                            s1_max, s2_max, s3_max = 7, 7, 50
+                        elif "2 Kısa Set" in format_bilgisi and "Tie-Break" in format_bilgisi:
+                            s1_max, s2_max, s3_max = 5, 5, 50
+                            
+                        # Hakem eski ve büyük bir değer girmişse hata vermemesi için min() ile koruma altına alındı
+                        s1p1_val = min(mevcut_skorlar["s1_p1"], s1_max)
+                        s1p2_val = min(mevcut_skorlar["s1_p2"], s1_max)
+                        s2p1_val = min(mevcut_skorlar["s2_p1"], s2_max)
+                        s2p2_val = min(mevcut_skorlar["s2_p2"], s2_max)
+                        s3p1_val = min(mevcut_skorlar["s3_p1"], s3_max)
+                        s3p2_val = min(mevcut_skorlar["s3_p2"], s3_max)
+
+                        s1p1 = st.number_input(f"{row['Oyuncu 1']} (Set 1)", 0, s1_max, s1p1_val, key=f"s1p1_{idx}")
+                        s1p2 = st.number_input(f"{row['Oyuncu 2']} (Set 1)", 0, s1_max, s1p2_val, key=f"s1p2_{idx}")
+                        s2p1 = st.number_input(f"{row['Oyuncu 1']} (Set 2)", 0, s2_max, s2p1_val, key=f"s2p1_{idx}")
+                        s2p2 = st.number_input(f"{row['Oyuncu 2']} (Set 2)", 0, s2_max, s2p2_val, key=f"s2p2_{idx}")
+                        s3p1 = st.number_input(f"{row['Oyuncu 1']} (Set 3)", 0, s3_max, s3p1_val, key=f"s3p1_{idx}")
+                        s3p2 = st.number_input(f"{row['Oyuncu 2']} (Set 3)", 0, s3_max, s3p2_val, key=f"s3p2_{idx}")
                         
                         bit_val = st.selectbox("Bitiş Saati", SAAT_LISTESI, index=CURRENT_TIME_IDX, key=f"b_{idx}")
                         
