@@ -8,15 +8,15 @@ from datetime import datetime, timezone, timedelta
 
 st.set_page_config(page_title="Bashakem Paneli", layout="wide")
 
-# --- BENİM BOZDUĞUM SCROLL'U DÜZELTEN VE ÜST BOŞLUĞU DARALTAN CSS ---
+# --- SCROLL'U DÜZELTEN VE ÜST BOŞLUĞU AYARLAYAN CSS ---
 st.markdown("""
 <style>
-    /* Üstteki devasa boşluğu yok eder, alttan da rahat inmen için pay bırakır */
+    /* Butonların Streamlit barının altında kalmaması için 1rem yerine 4rem yaptık */
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 4rem !important; 
         padding-bottom: 5rem !important;
     }
-    /* Benim bozduğum SCROLL (kaydırma) özelliğini geri getirir ve zorla aktif eder */
+    /* Scroll (kaydırma) özelliğini geri getirir ve zorla aktif eder */
     html, body, [data-testid="stAppViewContainer"], .stApp {
         overflow-y: auto !important;
         overflow-x: hidden !important;
