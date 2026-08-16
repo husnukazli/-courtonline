@@ -1,264 +1,514 @@
 import streamlit as st
+import pdfplumber
 import pandas as pd
 import requests
 import base64
 import json
+from datetime import datetime, timezone, timedelta
 
-st.set_page_config(page_title="Başhakem İzleme Masası", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Bashakem Paneli", layout="wide")
 
+# --- SENİN KODUNA DOKUNMADAN SADECE BOŞLUK VE KAYDIRMA İÇİN EKLENEN CSS ---
 st.markdown("""
 <style>
+    /* Üstteki devasa boşluğu yok eder */
     .block-container {
-        padding-top: 0.8rem !important;
-        padding-bottom: 1rem !important;
-        padding-left: 1.2rem !important;
-        padding-right: 1.2rem !important;
+        padding-top: 1rem !important;
+        padding-bottom: 2rem !important;
     }
-    h1, h2, h3, h4 {
-        margin: 0rem 0rem 0.4rem 0rem !important;
-        padding: 0rem !important;
-    }
-    .izgara-kapsayici {
-        max-height: 78vh;
-        overflow-y: auto !important;
-        overflow-x: auto !important;
-        padding-right: 10px;
-        padding-bottom: 25px;
-    }
-    .kort-baslik {
-        text-align: center;
-        background: #1e293b;
-        color: #ffffff;
-        border-radius: 6px;
-        padding: 6px 4px;
-        font-weight: 700;
-        font-size: 14px;
-        margin-bottom: 10px;
-        letter-spacing: 0.5px;
-    }
-    .mac-kart {
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 12px;
-        border-left: 6px solid #64748b;
-        background-color: #ffffff;
-        color: #0f172a;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-        border-top: 1px solid #e2e8f0;
-        border-right: 1px solid #e2e8f0;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    .durum-baslamadi {
-        border-left-color: #94a3b8 !important;
-        background-color: #f8fafc !important;
-    }
-    .durum-oynaniyor {
-        border-left-color: #eab308 !important;
-        background-color: #fefce8 !important;
-    }
-    .durum-tamamlandi {
-        border-left-color: #22c55e !important;
-        background-color: #f0fdf4 !important;
-    }
-    .durum-iptal {
-        border-left-color: #ef4444 !important;
-        background-color: #fef2f2 !important;
-    }
-    .kart-ust-bilgi {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 6px;
-        font-size: 12px;
-    }
-    .kart-saat {
-        font-weight: 700;
-        color: #334155;
-        background: #e2e8f0;
-        padding: 2px 6px;
-        border-radius: 4px;
-    }
-    .kart-kat {
-        font-weight: 600;
-        color: #0284c7;
-    }
-    .kart-oyuncu {
-        font-weight: 700;
-        font-size: 13px;
-        margin: 3px 0;
-        color: #0f172a;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .kart-alt-bilgi {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 8px;
-        padding-top: 6px;
-        border-top: 1px dashed #cbd5e1;
-        font-size: 12px;
-    }
-    .kart-skor {
-        font-weight: 800;
-        color: #be123c;
-    }
-    .kart-hakem {
-        color: #64748b;
-        font-size: 11px;
+    /* Sayfanın 3. maçtan sonra aşağıya rahatça kaymasını sağlar */
+    .stApp {
+        overflow-y: visible !important;
     }
 </style>
 """, unsafe_allow_html=True)
+# -------------------------------------------------------------------------
 
 def githubdan_veri_getir(dosya_yolu):
     try:
         token = st.secrets["GITHUB_TOKEN"]
         repo = st.secrets["REPO_NAME"]
-        url = f"https://api.github.com/repos/{repo}/contents/{dosya_yolu}"
-        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
-        cevap = requests.get(url, headers=headers)
-        if cevap.status_code == 200:
-            icerik_b64 = cevap.json().get("content", "")
-            if icerik_b64:
-                return json.loads(base64.b64decode(icerik_b64).decode('utf-8'))
-    except Exception:
-        pass
-    return []
+    except KeyError:
+        return None
 
-def github_a_kaydet(veri, dosya_yolu):
+    url = f"https://api.github.com/repos/{repo}/contents/{dosya_yolu}"
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+    
+    cevap = requests.get(url, headers=headers)
+    if cevap.status_code == 200:
+        icerik_b64 = cevap.json().get("content", "")
+        if icerik_b64:
+            return json.loads(base64.b64decode(icerik_b64).decode('utf-8'))
+    return None
+
+def github_a_kaydet(veri_listesi, dosya_yolu):
     try:
         token = st.secrets["GITHUB_TOKEN"]
         repo = st.secrets["REPO_NAME"]
-        url = f"https://api.github.com/repos/{repo}/contents/{dosya_yolu}"
-        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
-        
-        sha = None
-        cevap_get = requests.get(url, headers=headers)
-        if cevap_get.status_code == 200:
-            sha = cevap_get.json().get("sha")
-            
-        icerik_json = json.dumps(veri, indent=4, ensure_ascii=False)
-        icerik_b64 = base64.b64encode(icerik_json.encode('utf-8')).decode('utf-8')
-        
-        payload = {"message": f"{dosya_yolu} Başhakem Güncellemesi", "content": icerik_b64}
-        if sha:
-            payload["sha"] = sha
-            
-        cevap_put = requests.put(url, headers=headers, json=payload)
-        return cevap_put.status_code in [200, 201], cevap_put.text
-    except Exception as e:
-        return False, str(e)
+    except KeyError:
+        return False, "Token eksik."
 
-# --- SOL MENÜ AYARLARI ---
-with st.sidebar:
-    st.title("🎛️ Başhakem Masası")
-    if st.button("🔄 Ekranı Yenile", type="primary", use_container_width=True):
-        st.rerun()
+    url = f"https://api.github.com/repos/{repo}/contents/{dosya_yolu}"
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
     
-    st.divider()
-    durum_filtresi = st.selectbox("Durum Filtresi", ["Tümü", "Oynaniyor", "Baslamadi", "Tamamlandi"])
-    gorunum_olcegi = st.slider("Kart Boyut Ölçeği (%)", min_value=75, max_value=120, value=95, step=5)
-    
-    st.divider()
-    st.markdown("### 📊 Hızlı İstatistik")
-    tum_mac_verisi = githubdan_veri_getir("mac_programi.json") or []
-    if tum_mac_verisi:
-        df_ist = pd.DataFrame(tum_mac_verisi)
-        toplam_sayi = len(df_ist)
-        oynanan_sayi = len(df_ist[df_ist["Durum"] == "Oynaniyor"])
-        biten_sayi = len(df_ist[df_ist["Durum"] == "Tamamlandi"])
-        kalan_sayi = len(df_ist[df_ist["Durum"] == "Baslamadi"])
+    sha = None
+    cevap_get = requests.get(url, headers=headers)
+    if cevap_get.status_code == 200:
+        sha = cevap_get.json().get("sha")
         
-        st.write(f"🎾 **Toplam Maç:** {toplam_sayi}")
-        st.write(f"🟡 **Oynanan:** {oynanan_sayi}")
-        st.write(f"🟢 **Tamamlanan:** {biten_sayi}")
-        st.write(f"⚪ **Başlamayan:** {kalan_sayi}")
+    icerik_json = json.dumps(veri_listesi, indent=4, ensure_ascii=False)
+    icerik_b64 = base64.b64encode(icerik_json.encode('utf-8')).decode('utf-8')
+    
+    payload = {"message": f"Guncelleme: {dosya_yolu}", "content": icerik_b64}
+    if sha:
+        payload["sha"] = sha
+        
+    cevap_put = requests.put(url, headers=headers, json=payload)
+    if cevap_put.status_code in [200, 201]:
+        return True, "Basarili"
+    else:
+        return False, cevap_put.text
 
-# --- ANA EKRAN İÇERİĞİ ---
-if not tum_mac_verisi:
-    st.warning("⚠️ Sistemde yüklü maç bulunamadı. Lütfen 'Maç Programı Yükleme' sayfasından programı sisteme aktarın.")
+def ayarlari_ayikla(df):
+    mac_listesi = []
+    for kort in df.columns:
+        if not str(kort).startswith("Kort"):
+            continue
+        for hucre in df[kort]:
+            if pd.isna(hucre) or str(hucre).strip() == "":
+                continue
+            satirlar = [s.strip() for s in str(hucre).split('\n') if s.strip()]
+            if len(satirlar) >= 4:
+                saat = satirlar[0] 
+                oyuncu_1 = satirlar[1] 
+                kategori = next((s for s in satirlar if "Yas" in s or "Kategori" in s or "Yaş" in s), "Kategori Yok")
+                try:
+                    kat_index = satirlar.index(kategori)
+                    oyuncu_2 = satirlar[kat_index + 1]
+                except:
+                    oyuncu_2 = "Bilinmiyor"
+
+                mac_listesi.append({
+                    "Kort": kort.strip(),
+                    "Saat": saat,
+                    "Kategori": kategori,
+                    "Oyuncu 1": oyuncu_1,
+                    "Oyuncu 2": oyuncu_2,
+                    "Durum": "Baslamadi",
+                    "Skor": "-",
+                    "Baslangic_Saati": "",
+                    "Bitis_Saati": "",
+                    "Kura_Kazanan": "",
+                    "Kura_Tercih": "",
+                    "Saha_Tarafi": "",
+                    "Kazanan": "Secilmedi",
+                    "Son_Hakem": "-",
+                    "sure_islendi": False
+                })
+    return pd.DataFrame(mac_listesi)
+
+def kazanan_kim(mac):
+    kazanan_str = mac.get("Kazanan", "")
+    if kazanan_str and kazanan_str != "Secilmedi":
+        if kazanan_str == mac.get("Oyuncu 1"): return 1
+        if kazanan_str == mac.get("Oyuncu 2"): return 2
+        
+    skor_str = mac.get("Skor", "-")
+    if not skor_str or skor_str == "-":
+        return None
+    p1_sets = 0
+    p2_sets = 0
+    try:
+        for s in skor_str.split():
+            parts = s.split("/")
+            if len(parts) == 2:
+                g1 = int(parts[0])
+                g2 = int(parts[1])
+                if g1 > g2:
+                    p1_sets += 1
+                elif g2 > g1:
+                    p2_sets += 1
+    except:
+        pass
+    if p1_sets > p2_sets:
+        return 1
+    elif p2_sets > p1_sets:
+        return 2
+    return None
+
+def mac_suresi_hesapla(mac):
+    b_saat = mac.get("Baslangic_Saati", "")
+    bit_saat = mac.get("Bitis_Saati", "")
+    durum = mac.get("Durum", "")
+    
+    if not b_saat or b_saat == "Secilmedi":
+        return None
+        
+    try:
+        t1 = datetime.strptime(b_saat.strip(), "%H:%M")
+        
+        if bit_saat and bit_saat != "Secilmedi":
+            t2 = datetime.strptime(bit_saat.strip(), "%H:%M")
+            diff = int((t2 - t1).total_seconds() / 60)
+            if diff > 0:
+                return f"{diff} dk (Tamamlandı)"
+        
+        if durum == "Oynaniyor":
+            TRT = timezone(timedelta(hours=3))
+            simdi = datetime.now(TRT)
+            t1_full = simdi.replace(hour=t1.hour, minute=t1.minute, second=0, microsecond=0)
+            diff_sec = (simdi - t1_full).total_seconds()
+            diff_dk = int(diff_sec / 60)
+            if diff_dk >= 0:
+                return f"{diff_dk} dk (Devam Ediyor)"
+    except:
+        pass
+    return None
+
+def tooltip_html_olustur(mac):
+    saat = mac.get('Saat', '-')
+    kategori = mac.get('Kategori', '-')
+    b_saat = mac.get('Baslangic_Saati', '')
+    bit_saat = mac.get('Bitis_Saati', '')
+    k_kazanan = mac.get('Kura_Kazanan', '')
+    k_tercih = mac.get('Kura_Tercih', '')
+    s_tarafi = mac.get('Saha_Tarafi', '')
+    son_hakem = mac.get('Son_Hakem', '')
+    
+    html = f'<b style="color: #00E5FF; font-size: 14px;">Maç Detayları</b><br>'
+    html += f'<b>Planlanan Saat:</b> <span style="color: #FFD700; font-weight: bold;">{saat}</span><br>'
+    html += f'<b>Kategori:</b> {kategori}'
+    
+    detaylar = []
+    if b_saat and b_saat != "Secilmedi":
+        detaylar.append(f'<b>Başlama:</b> <span style="color: #00FF66; font-weight: bold;">{b_saat}</span>')
+    if bit_saat and bit_saat != "Secilmedi":
+        detaylar.append(f'<b>Bitiş:</b> <span style="color: #FF1744; font-weight: bold;">{bit_saat}</span>')
+        
+    sure_metni = mac_suresi_hesapla(mac)
+    if sure_metni:
+        detaylar.append(f'<b>Maç Süresi:</b> <span style="color: #00E5FF; font-weight: bold;">{sure_metni}</span>')
+        
+    if k_kazanan and k_kazanan != "Secilmedi":
+        detaylar.append(f'<b>Kura Kazanan:</b> {k_kazanan}')
+    if k_tercih and k_tercih != "Secilmedi":
+        detaylar.append(f'<b>Tercih:</b> {k_tercih}')
+    if s_tarafi and s_tarafi != "Secilmedi":
+        detaylar.append(f'<b>Taraf:</b> {s_tarafi}')
+        
+    if detaylar:
+        html += '<hr style="margin: 6px 0; border-color: #444;">'
+        html += '<br>'.join(detaylar)
+        
+    if son_hakem and son_hakem != "-":
+        html += f'<div style="margin-top: 6px; border-top: 1px dashed #555; padding-top: 4px; color: #FF9100; font-weight: bold; font-size: 12px;">Aktif Hakem: {son_hakem}</div>'
+        
+    return html
+
+if "bashakem_giris" not in st.session_state:
+    st.session_state.bashakem_giris = False
+
+if "bashakem_sayfa" not in st.session_state:
+    st.session_state.bashakem_sayfa = "Akis"
+
+if not st.session_state.bashakem_giris:
+    st.title("Bashakem Giris Ekrani")
+    sifre_input = st.text_input("Bashakem Sifresi", type="password")
+    if st.button("Giris Yap"):
+        if sifre_input == "1234":
+            st.session_state.bashakem_giris = True
+            st.rerun()
+        else:
+            st.error("Hatali sifre.")
 else:
-    df = pd.DataFrame(tum_mac_verisi)
-    kortlar = list(df["Kort"].unique())
-    
-    col_h1, col_h2, col_h3 = st.columns([3, 1, 1])
-    with col_h1:
-        st.markdown("### 🎾 Canlı Kort İzleme Paneli")
-    with col_h2:
-        st.info(f"🟡 Oynanan: {len(df[df['Durum'] == 'Oynaniyor'])}")
-    with col_h3:
-        st.success(f"🟢 Biten: {len(df[df['Durum'] == 'Tamamlandi'])}")
-
-    st.markdown('<div class="izgara-kapsayici">', unsafe_allow_html=True)
-    kort_sutunlari = st.columns(len(kortlar))
-
-    for k_idx, kort_adi in enumerate(kortlar):
-        with kort_sutunlari[k_idx]:
-            st.markdown(f'<div class="kort-baslik">{kort_adi}</div>', unsafe_allow_html=True)
-            
-            kort_maclari = df[df["Kort"] == kort_adi]
-            if durum_filtresi != "Tümü":
-                kort_maclari = kort_maclari[kort_maclari["Durum"] == durum_filtresi]
-                
-            for _, mac in kort_maclari.iterrows():
-                durum = mac.get("Durum", "Baslamadi")
-                durum_class = "durum-baslamadi"
-                durum_etiket = "Başlamadı"
-                if durum == "Oynaniyor":
-                    durum_class = "durum-oynaniyor"
-                    durum_etiket = "Oynanıyor"
-                elif durum == "Tamamlandi":
-                    durum_class = "durum-tamamlandi"
-                    durum_etiket = "Tamamlandı"
-                elif durum == "Iptal":
-                    durum_class = "durum-iptal"
-                    durum_etiket = "İptal"
-
-                hakem = mac.get("Son_Hakem", "")
-                hakem_yazisi = f"👤 {hakem}" if hakem else "👤 Atanmadı"
-                skor_yazisi = mac.get("Skor", "-")
-
-                st.markdown(f"""
-                <div class="mac-kart {durum_class}" style="font-size: {int(gorunum_olcegi * 0.135)}px;">
-                    <div class="kart-ust-bilgi">
-                        <span class="kart-saat">⏰ {mac.get('Saat', '')}</span>
-                        <span class="kart-kat">{mac.get('Kategori', '')}</span>
-                    </div>
-                    <div class="kart-oyuncu">1. {mac.get('Oyuncu 1', '')}</div>
-                    <div class="kart-oyuncu">2. {mac.get('Oyuncu 2', '')}</div>
-                    <div class="kart-alt-bilgi">
-                        <span class="kart-skor">Skor: {skor_yazisi}</span>
-                        <span class="kart-hakem">{hakem_yazisi}</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+    col_b1, col_b2, col_yenile, col_cikis = st.columns([2, 2, 2, 2])
+    with col_b1:
+        if st.button("Kort Akisi (Takip)", use_container_width=True):
+            st.session_state.bashakem_sayfa = "Akis"
+            st.rerun()
+    with col_b2:
+        if st.button("Yonetim Paneli", use_container_width=True):
+            st.session_state.bashakem_sayfa = "Yonetim"
+            st.rerun()
+    with col_yenile:
+        if st.button("Anlik Yenile", use_container_width=True):
+            st.rerun()
+    with col_cikis:
+        if st.button("Cikis Yap", use_container_width=True):
+            st.session_state.bashakem_giris = False
+            st.rerun()
 
     st.divider()
-    with st.expander("🛠️ Başhakem Hızlı Müdahale ve Maç Düzenleme Alanı"):
-        st.markdown("**Seçilen Maçın Durumunu veya Skorunu Doğrudan Güncelle**")
-        mac_etiketleri = [f"{m.get('Kort')} | {m.get('Saat')} | {m.get('Oyuncu 1')} vs {m.get('Oyuncu 2')}" for m in tum_mac_verisi]
-        secilen_mac_idx = st.selectbox("Düzenlenecek Maçı Seçin", range(len(mac_etiketleri)), format_func=lambda x: mac_etiketleri[x])
-        
-        if secilen_mac_idx is not None:
-            secili = tum_mac_verisi[secilen_mac_idx]
-            col_m1, col_m2, col_m3 = st.columns(3)
-            with col_m1:
-                yeni_durum = st.selectbox("Durum", ["Baslamadi", "Oynaniyor", "Tamamlandi", "Iptal"], index=["Baslamadi", "Oynaniyor", "Tamamlandi", "Iptal"].index(secili.get("Durum", "Baslamadi")))
-            with col_m2:
-                yeni_skor = st.text_input("Skor", value=secili.get("Skor", "-"))
-            with col_m3:
-                yeni_hakem = st.text_input("Hakem", value=secili.get("Son_Hakem", ""))
 
-            if st.button("💾 Değişiklikleri GitHub'a Kaydet", type="primary"):
-                tum_mac_verisi[secilen_mac_idx]["Durum"] = yeni_durum
-                tum_mac_verisi[secilen_mac_idx]["Skor"] = yeni_skor
-                tum_mac_verisi[secilen_mac_idx]["Son_Hakem"] = yeni_hakem
-                ok, msg = github_a_kaydet(tum_mac_verisi, "mac_programi.json")
-                if ok:
-                    st.success("Maç başarıyla güncellendi!")
-                    st.rerun()
+    if st.session_state.bashakem_sayfa == "Akis":
+        col_zoom1, _ = st.columns([2, 8])
+        with col_zoom1:
+            zoom_seviyesi = st.slider("Gorunum Olcegi (%)", min_value=50, max_value=150, value=120, step=10)
+
+        st.markdown(f"""
+            <style>
+            .stApp {{
+                zoom: {zoom_seviyesi}%;
+            }}
+            @media (max-width: 768px) {{
+                [data-testid="stHorizontalBlock"] {{
+                    display: flex !important;
+                    flex-direction: row !important;
+                    flex-wrap: nowrap !important;
+                    overflow-x: auto !important;
+                    width: 100% !important;
+                    gap: 12px !important;
+                    padding-bottom: 12px !important;
+                    -webkit-overflow-scrolling: touch;
+                }}
+                [data-testid="column"] {{
+                    flex: 0 0 170px !important;
+                    max-width: 170px !important;
+                    min-width: 170px !important;
+                }}
+            }}
+            .tooltip-container {{
+                position: relative;
+                display: block;
+            }}
+            .tooltip-container .tooltip-text {{
+                visibility: hidden;
+                width: 250px;
+                background-color: #1a1a1a;
+                color: #e0e0e0;
+                text-align: left;
+                border-radius: 8px;
+                padding: 12px;
+                position: absolute;
+                z-index: 100;
+                bottom: 105%;
+                left: 50%;
+                transform: translateX(-50%);
+                opacity: 0;
+                transition: opacity 0.3s;
+                font-size: 13px;
+                line-height: 1.4;
+                border: 1px solid #00E5FF;
+                box-shadow: 0px 6px 15px rgba(0,0,0,0.7);
+            }}
+            .tooltip-container:hover .tooltip-text {{
+                visibility: visible;
+                opacity: 1;
+            }}
+            </style>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        mevcut_program = githubdan_veri_getir("mac_programi.json")
+
+        if mevcut_program:
+            df_maclar = pd.DataFrame(mevcut_program)
+            aktif_kortlar = sorted(df_maclar["Kort"].unique(), key=lambda x: int(x.replace("Kort", "").strip()) if x.replace("Kort", "").strip().isdigit() else x)
+            
+            if aktif_kortlar:
+                kort_dict = {}
+                max_rows = 0
+                for k in aktif_kortlar:
+                    m_list = df_maclar[df_maclar["Kort"] == k].to_dict(orient="records")
+                    kort_dict[k] = m_list
+                    if len(m_list) > max_rows:
+                        max_rows = len(m_list)
+
+                baslik_kolonlari = st.columns(len(aktif_kortlar))
+                for idx, k in enumerate(aktif_kortlar):
+                    with baslik_kolonlari[idx]:
+                        st.markdown(f"**{k}**")
+
+                st.markdown("<hr style='margin: 2px 0 10px 0;'>", unsafe_allow_html=True)
+
+                for row_idx in range(max_rows):
+                    cols = st.columns(len(aktif_kortlar))
+                    for idx, k in enumerate(aktif_kortlar):
+                        with cols[idx]:
+                            m_list = kort_dict[k]
+                            if row_idx < len(m_list):
+                                mac = m_list[row_idx]
+                                durum = mac.get("Durum", "Baslamadi")
+                                skor = mac.get("Skor", "-")
+                                
+                                kazanan = kazanan_kim(mac) if durum in ["Bitti", "Walkover", "Retired"] else None
+                                if kazanan == 1:
+                                    p1_style = "color: #ffffff; font-weight: bold;"
+                                    p2_style = "color: #666666;"
+                                    p1_isim = f"✓ {mac['Oyuncu 1']}"
+                                    p2_isim = mac['Oyuncu 2']
+                                elif kazanan == 2:
+                                    p1_style = "color: #666666;"
+                                    p2_style = "color: #ffffff; font-weight: bold;"
+                                    p1_isim = mac['Oyuncu 1']
+                                    p2_isim = f"✓ {mac['Oyuncu 2']}"
+                                else:
+                                    p1_style = "color: #e0e0e0;"
+                                    p2_style = "color: #e0e0e0;"
+                                    p1_isim = mac['Oyuncu 1']
+                                    p2_isim = mac['Oyuncu 2']
+
+                                if durum == "Oynaniyor":
+                                    durum_str = "DEVAM"
+                                    durum_style = "color: #00FF66; font-weight: bold;"
+                                    skor_style = "color: #00FF66; font-weight: bold; font-size: 16px;"
+                                elif durum in ["Bitti", "Walkover"]:
+                                    durum_str = durum.upper()
+                                    durum_style = "color: #FF1744; font-weight: bold;"
+                                    skor_style = "color: #FF1744; font-weight: bold; font-size: 13px;"
+                                elif durum == "Retired":
+                                    durum_str = "RET"
+                                    durum_style = "color: #FFEA00; font-weight: bold;"
+                                    skor_style = "color: #FFEA00; font-weight: bold; font-size: 13px;"
+                                else:
+                                    durum_str = "Bekliyor"
+                                    durum_style = "color: #888888;"
+                                    skor_style = "color: #888888; font-size: 11px;"
+
+                                tooltip_html = tooltip_html_olustur(mac)
+
+                                card_html = f"""
+                                <div class="tooltip-container">
+                                    <div style="border: 1px solid #444; border-radius: 4px; padding: 6px; margin-bottom: 4px; background-color: #1a1a1a; color: #e0e0e0; font-size: 11px; line-height: 1.1; cursor: pointer;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                                            <span style="font-weight: bold; color: #fff;">{mac['Saat']}</span>
+                                            <span style="{durum_style}">{durum_str}</span>
+                                        </div>
+                                        <div style="color: #999; font-size: 9px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{mac['Kategori']}</div>
+                                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; {p1_style}">{p1_isim}</div>
+                                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; {p2_style}">{p2_isim}</div>
+                                        <div style="margin-top: 4px; border-top: 1px dashed #333; padding-top: 3px; text-align: center;">
+                                            <span style="{skor_style}">Skor: {skor}</span>
+                                        </div>
+                                    </div>
+                                    <span class="tooltip-text">
+                                        {tooltip_html}
+                                    </span>
+                                </div>
+                                """
+                                st.markdown(card_html, unsafe_allow_html=True)
+                            else:
+                                st.markdown("""
+                                <div style="border: 1px dashed #222; border-radius: 4px; padding: 5px; margin-bottom: 4px; background-color: transparent; height: 75px;">
+                                </div>
+                                """, unsafe_allow_html=True)
+        else:
+            st.info("Sistemde kayitli mac programi yok. Yonetim panelinden PDF yukleyebilirsiniz.")
+
+    elif st.session_state.bashakem_sayfa == "Yonetim":
+        st.subheader("Turnuva Yonetim ve İstatistik Paneli")
+        
+        program_data = githubdan_veri_getir("mac_programi.json")
+        if program_data:
+            df_stat = pd.DataFrame(program_data)
+            toplam_mac = len(df_stat)
+            biten_mac = len(df_stat[df_stat["Durum"].isin(["Bitti", "Walkover", "Retired"])])
+            devam_eden = len(df_stat[df_stat["Durum"] == "Oynaniyor"])
+            baslamayan = len(df_stat[df_stat["Durum"] == "Baslamadi"])
+            oran = int((biten_mac / toplam_mac * 100)) if toplam_mac > 0 else 0
+            
+            sureler = []
+            istatistikler = githubdan_veri_getir("turnuva_istatistikleri.json")
+            if isinstance(istatistikler, dict) and "sureler" in istatistikler:
+                sureler.extend(istatistikler["sureler"])
+            
+            # Sadece normal "Bitti" statüsündeki maç süreleri istatistiğe dahil edilir (Walkover ve Retired hariç)
+            for _, row in df_stat.iterrows():
+                if row.get("Durum") == "Bitti":
+                    b_saat = row.get("Baslangic_Saati", "")
+                    bit_saat = row.get("Bitis_Saati", "")
+                    if b_saat and bit_saat and b_saat != "Secilmedi" and bit_saat != "Secilmedi":
+                        try:
+                            t1 = datetime.strptime(b_saat.strip(), "%H:%M")
+                            t2 = datetime.strptime(bit_saat.strip(), "%H:%M")
+                            diff = (t2 - t1).total_seconds() / 60
+                            if 0 < diff < 600:
+                                sureler.append(int(diff))
+                        except:
+                            pass
+
+            ortalama_sure = int(sum(sureler) / len(sureler)) if sureler else 0
+
+            st.markdown("### Turnuva İstatistikleri")
+            st.metric(label="Gunluk Tamamlanma Orani", value=f"%{oran}", delta=f"{biten_mac} / {toplam_mac} Mac Bitti")
+            
+            st1, st2, st3, st4, st5 = st.columns(5)
+            with st1:
+                st.metric("Planlanan (Toplam)", toplam_mac)
+            with st2:
+                st.metric("Tamamlanan", biten_mac)
+            with st3:
+                st.metric("Devam Eden", devam_eden)
+            with st4:
+                st.metric("Baslamayan", baslamayan)
+            with st5:
+                st.metric("Turnuva Ort. Süre", f"{ortalama_sure} dk")
+                
+            st.divider()
+
+        st.markdown("### Hakem Yonetimi")
+        kayitli_hakemler = githubdan_veri_getir("hakemler.json")
+        if not isinstance(kayitli_hakemler, dict):
+            kayitli_hakemler = {}
+            
+        col_h1, col_h2 = st.columns(2)
+        with col_h1:
+            yeni_kullanici = st.text_input("Hakem Kullanici Adi / Ismi")
+        with col_h2:
+            yeni_sifre = st.text_input("Hakem Sifresi", type="password")
+            
+        if st.button("Hakem Ekle / Guncelle"):
+            if yeni_kullanici.strip() and yeni_sifre.strip():
+                kayitli_hakemler[yeni_kullanici.strip()] = yeni_sifre.strip()
+                basarili, mesaj = github_a_kaydet(kayitli_hakemler, "hakemler.json")
+                if basarili:
+                    st.success(f"'{yeni_kullanici}' basariyla kaydedildi.")
                 else:
-                    st.error(f"Kayıt hatası: {msg}")
+                    st.error(f"Kayit hatasi: {mesaj}")
+            else:
+                st.warning("Kullanici adi ve sifre bos olamaz.")
+                
+        if kayitli_hakemler:
+            st.write("Sistemde Kayitli Hakemler ve Şifreleri:")
+            for hakem_adi, hakem_sifre in list(kayitli_hakemler.items()):
+                col_n, col_s = st.columns([5, 1])
+                with col_n:
+                    st.text(f"• {hakem_adi} (Şifre: {hakem_sifre})")
+                with col_s:
+                    if st.button("Sil", key=f"sil_h_{hakem_adi}"):
+                        del kayitli_hakemler[hakem_adi]
+                        basarili, mesaj = github_a_kaydet(kayitli_hakemler, "hakemler.json")
+                        if basarili:
+                            st.success(f"'{hakem_adi}' silindi.")
+                            st.rerun()
+                        else:
+                            st.error(mesaj)
+
+        st.divider()
+
+        st.markdown("### Yeni Program (PDF) Yükleme")
+        yuklenen_pdf = st.file_uploader("PDF Sec", type="pdf")
+        if yuklenen_pdf:
+            with st.spinner("Isleniyor..."):
+                tum_temiz_veriler = pd.DataFrame()
+                with pdfplumber.open(yuklenen_pdf) as pdf:
+                    for sayfa in pdf.pages:
+                        tablo = sayfa.extract_table()
+                        if tablo:
+                            df_ham = pd.DataFrame(tablo[1:], columns=tablo[0])
+                            if None in df_ham.columns:
+                                df_ham = df_ham.dropna(axis=1, how='all')
+                                df_ham.columns = [f"Kort {i+1}" for i in range(len(df_ham.columns))]
+                            df_temiz = ayarlari_ayikla(df_ham)
+                            if not df_temiz.empty:
+                                tum_temiz_veriler = pd.concat([tum_temiz_veriler, df_temiz], ignore_index=True)
+                
+                if not tum_temiz_veriler.empty:
+                    st.dataframe(tum_temiz_veriler, use_container_width=True)
+                    if st.button("Onayla ve Mevcut Programın Üzerine Yaz"):
+                        basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
+                        if basarili:
+                            st.success("Yeni program kaydedildi!")
+                        else:
+                            st.error(mesaj)
