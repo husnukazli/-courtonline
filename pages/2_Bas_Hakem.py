@@ -85,11 +85,18 @@ def ayarlari_ayikla(df):
                     "Kura_Kazanan": "",
                     "Kura_Tercih": "",
                     "Saha_Tarafi": "",
+                    "Kazanan": "Secilmedi",
                     "sure_islendi": False
                 })
     return pd.DataFrame(mac_listesi)
 
-def kazanan_kim(skor_str):
+def kazanan_kim(mac):
+    kazanan_str = mac.get("Kazanan", "")
+    if kazanan_str and kazanan_str != "Secilmedi":
+        if kazanan_str == mac.get("Oyuncu 1"): return 1
+        if kazanan_str == mac.get("Oyuncu 2"): return 2
+        
+    skor_str = mac.get("Skor", "-")
     if not skor_str or skor_str == "-":
         return None
     p1_sets = 0
@@ -242,7 +249,7 @@ else:
                                 k_tercih = mac.get("Kura_Tercih", "-")
                                 s_tarafi = mac.get("Saha_Tarafi", "-")
                                 
-                                kazanan = kazanan_kim(skor) if durum in ["Bitti", "Hükmen"] else None
+                                kazanan = kazanan_kim(mac) if durum in ["Bitti", "Walkover"] else None
                                 if kazanan == 1:
                                     p1_style = "color: #ffffff; font-weight: bold;"
                                     p2_style = "color: #666666;"
@@ -263,7 +270,7 @@ else:
                                     durum_str = "DEVAM"
                                     durum_style = "color: #00FF66; font-weight: bold;"
                                     skor_style = "color: #00FF66; font-weight: bold; font-size: 16px;"
-                                elif durum in ["Bitti", "Hükmen"]:
+                                elif durum in ["Bitti", "Walkover"]:
                                     durum_str = durum.upper()
                                     durum_style = "color: #FF1744; font-weight: bold;"
                                     skor_style = "color: #FF1744; font-weight: bold; font-size: 13px;"
@@ -315,7 +322,7 @@ else:
         if program_data:
             df_stat = pd.DataFrame(program_data)
             toplam_mac = len(df_stat)
-            biten_mac = len(df_stat[df_stat["Durum"].isin(["Bitti", "Hükmen"])])
+            biten_mac = len(df_stat[df_stat["Durum"].isin(["Bitti", "Walkover"])])
             devam_eden = len(df_stat[df_stat["Durum"] == "Oynaniyor"])
             baslamayan = len(df_stat[df_stat["Durum"] == "Baslamadi"])
             oran = int((biten_mac / toplam_mac * 100)) if toplam_mac > 0 else 0
@@ -326,7 +333,7 @@ else:
                 sureler.extend(istatistikler["sureler"])
             
             for _, row in df_stat.iterrows():
-                if row.get("Durum") in ["Bitti", "Hükmen"]:
+                if row.get("Durum") in ["Bitti", "Walkover"]:
                     b_saat = row.get("Baslangic_Saati", "")
                     bit_saat = row.get("Bitis_Saati", "")
                     if b_saat and bit_saat and b_saat != "Secilmedi" and bit_saat != "Secilmedi":
@@ -358,7 +365,6 @@ else:
                 
             st.divider()
 
-        # Hakem Yönetimi (Ekleme ve Silme / Temizleme Özellikli)
         st.markdown("### Hakem Yonetimi")
         kayitli_hakemler = githubdan_veri_getir("hakemler.json")
         if not isinstance(kayitli_hakemler, dict):
@@ -418,7 +424,7 @@ else:
                 
                 if not tum_temiz_veriler.empty:
                     st.dataframe(tum_temiz_veriler, use_container_width=True)
-                    if st.button("Onayla ve Mevcut Programın Üzerine Yaz"):
+                    if st.button("Onayla und Mevcut Programın Üzerine Yaz"):
                         basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
                         if basarili:
                             st.success("Yeni program kaydedildi!")
