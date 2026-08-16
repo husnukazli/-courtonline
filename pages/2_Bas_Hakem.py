@@ -91,7 +91,6 @@ def ayarlari_ayikla(df):
     return pd.DataFrame(mac_listesi)
 
 def kazanan_kim(mac):
-    # Önce açıkça seçilen bir kazanan var mı ona bakıyoruz (Walkover / Retired için kritik)
     kazanan_str = mac.get("Kazanan", "")
     if kazanan_str and kazanan_str != "Secilmedi":
         if kazanan_str == mac.get("Oyuncu 1"): return 1
@@ -389,11 +388,11 @@ else:
                 st.warning("Kullanici adi ve sifre bos olamaz.")
                 
         if kayitli_hakemler:
-            st.write("Sistemde Kayitli Hakemler:")
-            for hakem_adi in list(kayitli_hakemler.keys()):
+            st.write("Sistemde Kayitli Hakemler ve Şifreleri:")
+            for hakem_adi, hakem_sifre in list(kayitli_hakemler.items()):
                 col_n, col_s = st.columns([5, 1])
                 with col_n:
-                    st.text(f"• {hakem_adi}")
+                    st.text(f"• {hakem_adi} (Şifre: {hakem_sifre})")
                 with col_s:
                     if st.button("Sil", key=f"sil_h_{hakem_adi}"):
                         del kayitli_hakemler[hakem_adi]
