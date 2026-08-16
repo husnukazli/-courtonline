@@ -12,7 +12,8 @@
         "Kura_Kazanan": "SÜLEYMAN YİĞİT ÜYE",
         "Kura_Tercih": "Servis",
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 1",
@@ -27,7 +28,8 @@
         "Kura_Kazanan": "TEOMAN USLU",
         "Kura_Tercih": "Servis",
         "Saha_Tarafi": "Sandalyenin Sagi / Sahanin Sagi",
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 1",
@@ -42,7 +44,8 @@
         "Kura_Kazanan": "CAN ŞENYÜZ",
         "Kura_Tercih": "Karsilama",
         "Saha_Tarafi": "Sandalyenin Solu / Sahanin Solu",
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 1",
@@ -57,7 +60,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 2",
@@ -72,7 +76,8 @@
         "Kura_Kazanan": "ULUÇ AKIN SARAN",
         "Kura_Tercih": "Karsilama",
         "Saha_Tarafi": "Sandalyenin Sagi / Sahanin Sagi",
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 2",
@@ -87,7 +92,8 @@
         "Kura_Kazanan": "SUNJA CELAL AKKAYA",
         "Kura_Tercih": "Karsilama",
         "Saha_Tarafi": "Sandalyenin Solu / Sahanin Solu",
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 2",
@@ -102,7 +108,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 2",
@@ -117,7 +124,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 3",
@@ -132,7 +140,8 @@
         "Kura_Kazanan": "EMİRALP PAÇACI",
         "Kura_Tercih": "Servis",
         "Saha_Tarafi": "Sandalyenin Sagi / Sahanin Sagi",
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 3",
@@ -147,7 +156,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 3",
@@ -162,7 +172,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 3",
@@ -177,7 +188,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 4",
@@ -192,7 +204,8 @@
         "Kura_Kazanan": "LAL KOCA",
         "Kura_Tercih": "Karsilama",
         "Saha_Tarafi": "Sandalyenin Sagi / Sahanin Sagi",
-        "sure_islendi": false
+        "sure_islendi": false,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 4",
@@ -207,7 +220,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 4",
@@ -222,7 +236,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 4",
@@ -237,7 +252,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 5",
@@ -252,7 +268,8 @@
         "Kura_Kazanan": "BARIŞ EDİZ ÇİÇEKLİ",
         "Kura_Tercih": "Karsilama",
         "Saha_Tarafi": "Sandalyenin Solu / Sahanin Solu",
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 5",
@@ -260,14 +277,15 @@
         "Kategori": "Erkek 9 Yaş T",
         "Oyuncu 1": "NARTAN ÇINAR YÜCEL",
         "Oyuncu 2": "AYAZ AKYOL",
-        "Durum": "Oynaniyor",
+        "Durum": "Yarım Kaldı",
         "Skor": "5/4 0/0",
         "Baslangic_Saati": "",
-        "Bitis_Saati": "",
+        "Bitis_Saati": "11:35",
         "Kura_Kazanan": "Secilmedi",
         "Kura_Tercih": "Secilmedi",
         "Saha_Tarafi": "Secilmedi",
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": "NARTAN ÇINAR YÜCEL"
     },
     {
         "Kort": "Kort 5",
@@ -282,7 +300,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 5",
@@ -297,7 +316,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 6",
@@ -312,7 +332,8 @@
         "Kura_Kazanan": "UZAY EĞILMEZ",
         "Kura_Tercih": "Karsilama",
         "Saha_Tarafi": "Sandalyenin Sagi / Sahanin Sagi",
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 6",
@@ -327,7 +348,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 6",
@@ -342,7 +364,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 6",
@@ -357,7 +380,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 1",
@@ -372,7 +396,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 1",
@@ -387,7 +412,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 1",
@@ -402,7 +428,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 1",
@@ -417,7 +444,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 1",
@@ -432,7 +460,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 1",
@@ -447,7 +476,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 2",
@@ -462,7 +492,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 2",
@@ -477,7 +508,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 2",
@@ -492,7 +524,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 2",
@@ -507,7 +540,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 2",
@@ -522,7 +556,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 2",
@@ -537,7 +572,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 3",
@@ -552,7 +588,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 3",
@@ -567,7 +604,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 3",
@@ -582,7 +620,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 3",
@@ -597,7 +636,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 3",
@@ -612,7 +652,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 3",
@@ -627,7 +668,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 4",
@@ -642,7 +684,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 4",
@@ -657,7 +700,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 4",
@@ -672,7 +716,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 4",
@@ -687,7 +732,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 5",
@@ -702,7 +748,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 5",
@@ -717,7 +764,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 5",
@@ -732,7 +780,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 5",
@@ -747,7 +796,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 6",
@@ -762,7 +812,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 6",
@@ -777,7 +828,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 6",
@@ -792,7 +844,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 6",
@@ -807,7 +860,8 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     },
     {
         "Kort": "Kort 1",
@@ -822,6 +876,7 @@
         "Kura_Kazanan": NaN,
         "Kura_Tercih": NaN,
         "Saha_Tarafi": NaN,
-        "sure_islendi": NaN
+        "sure_islendi": NaN,
+        "Kazanan": NaN
     }
 ]
