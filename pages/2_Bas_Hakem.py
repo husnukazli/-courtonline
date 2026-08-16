@@ -4,6 +4,7 @@ import pandas as pd
 import requests
 import base64
 import json
+import time
 from datetime import datetime, timezone, timedelta
 
 st.set_page_config(page_title="Bashakem Paneli", layout="wide")
@@ -11,19 +12,16 @@ st.set_page_config(page_title="Bashakem Paneli", layout="wide")
 # --- SCROLL'U DÜZELTEN VE ÜST BOŞLUĞU AYARLAYAN CSS ---
 st.markdown("""
 <style>
-    /* Butonların Streamlit barının altında kalmaması için 1rem yerine 4rem yaptık */
     .block-container {
         padding-top: 4rem !important; 
         padding-bottom: 5rem !important;
     }
-    /* Scroll (kaydırma) özelliğini geri getirir ve zorla aktif eder */
     html, body, [data-testid="stAppViewContainer"], .stApp {
         overflow-y: auto !important;
         overflow-x: hidden !important;
     }
 </style>
 """, unsafe_allow_html=True)
-# -------------------------------------------------------------------------
 
 def githubdan_veri_getir(dosya_yolu):
     try:
@@ -236,7 +234,9 @@ else:
             st.rerun()
     with col_yenile:
         if st.button("Anlik Yenile", use_container_width=True):
-            st.rerun()
+            with st.spinner("🔄 Veriler Çekiliyor..."):
+                time.sleep(0.6)
+                st.rerun()
     with col_cikis:
         if st.button("Cikis Yap", use_container_width=True):
             st.session_state.bashakem_giris = False
@@ -450,7 +450,6 @@ else:
                 
             st.divider()
             
-            # --- YENİ EKLENEN KATEGORİ VE FORMAT DENETİMİ BÖLÜMÜ ---
             st.markdown("### 🎾 Kategori ve Maç Formatı Eşleştirme")
             kategoriler = [k for k in df_stat["Kategori"].unique() if str(k).strip() and k != "Kategori Yok"]
             
@@ -483,18 +482,20 @@ else:
                         yeni_hafiza[kat] = secilen
                         
                 if st.button("Formatları Kaydet ve Tüm Maçlara Uygula", type="primary"):
-                    for i, row in df_stat.iterrows():
-                        if row["Kategori"] in yeni_hafiza:
-                            df_stat.at[i, "Skor_Formati"] = yeni_hafiza[row["Kategori"]]
-                            
-                    b1, m1 = github_a_kaydet(df_stat.to_dict(orient="records"), "mac_programi.json")
-                    b2, m2 = github_a_kaydet(yeni_hafiza, "kategori_format_hafizasi.json")
-                    
-                    if b1 and b2:
-                        st.success("Formatlar başarıyla tüm maçlara uygulandı!")
-                        st.rerun()
-                    else:
-                        st.error(f"Hata oluştu. M1: {m1}, M2: {m2}")
+                    with st.spinner("Buluta Kaydediliyor..."):
+                        for i, row in df_stat.iterrows():
+                            if row["Kategori"] in yeni_hafiza:
+                                df_stat.at[i, "Skor_Formati"] = yeni_hafiza[row["Kategori"]]
+                                
+                        b1, m1 = github_a_kaydet(df_stat.to_dict(orient="records"), "mac_programi.json")
+                        b2, m2 = github_a_kaydet(yeni_hafiza, "kategori_format_hafizasi.json")
+                        
+                        if b1 and b2:
+                            st.success("✅ Formatlar başarıyla uygulandı!")
+                            time.sleep(0.7)
+                            st.rerun()
+                        else:
+                            st.error(f"Hata oluştu. M1: {m1}, M2: {m2}")
             else:
                 st.info("Sistemde eşleştirilecek kategori bulunamadı.")
             
@@ -512,15 +513,18 @@ else:
             yeni_sifre = st.text_input("Hakem Sifresi", type="password")
             
         if st.button("Hakem Ekle / Guncelle"):
-            if yeni_kullanici.strip() and yeni_sifre.strip():
-                kayitli_hakemler[yeni_kullanici.strip()] = yeni_sifre.strip()
-                basarili, mesaj = github_a_kaydet(kayitli_hakemler, "hakemler.json")
-                if basarili:
-                    st.success(f"'{yeni_kullanici}' basariyla kaydedildi.")
+            with st.spinner("İşlem Yapılıyor..."):
+                if yeni_kullanici.strip() and yeni_sifre.strip():
+                    kayitli_hakemler[yeni_kullanici.strip()] = yeni_sifre.strip()
+                    basarili, mesaj = github_a_kaydet(kayitli_hakemler, "hakemler.json")
+                    if basarili:
+                        st.success(f"✅ '{yeni_kullanici}' kaydedildi.")
+                        time.sleep(0.7)
+                        st.rerun()
+                    else:
+                        st.error(f"Kayit hatasi: {mesaj}")
                 else:
-                    st.error(f"Kayit hatasi: {mesaj}")
-            else:
-                st.warning("Kullanici adi ve sifre bos olamaz.")
+                    st.warning("Kullanici adi ve sifre bos olamaz.")
                 
         if kayitli_hakemler:
             st.write("Sistemde Kayitli Hakemler ve Şifreleri:")
@@ -530,20 +534,22 @@ else:
                     st.text(f"• {hakem_adi} (Şifre: {hakem_sifre})")
                 with col_s:
                     if st.button("Sil", key=f"sil_h_{hakem_adi}"):
-                        del kayitli_hakemler[hakem_adi]
-                        basarili, mesaj = github_a_kaydet(kayitli_hakemler, "hakemler.json")
-                        if basarili:
-                            st.success(f"'{hakem_adi}' silindi.")
-                            st.rerun()
-                        else:
-                            st.error(mesaj)
+                        with st.spinner("Siliniyor..."):
+                            del kayitli_hakemler[hakem_adi]
+                            basarili, mesaj = github_a_kaydet(kayitli_hakemler, "hakemler.json")
+                            if basarili:
+                                st.success(f"✅ '{hakem_adi}' silindi.")
+                                time.sleep(0.7)
+                                st.rerun()
+                            else:
+                                st.error(mesaj)
 
         st.divider()
 
         st.markdown("### Yeni Program (PDF) Yükleme")
         yuklenen_pdf = st.file_uploader("PDF Sec", type="pdf")
         if yuklenen_pdf:
-            with st.spinner("Isleniyor..."):
+            with st.spinner("PDF Analiz Ediliyor..."):
                 tum_temiz_veriler = pd.DataFrame()
                 with pdfplumber.open(yuklenen_pdf) as pdf:
                     for sayfa in pdf.pages:
@@ -560,8 +566,11 @@ else:
                 if not tum_temiz_veriler.empty:
                     st.dataframe(tum_temiz_veriler, use_container_width=True)
                     if st.button("Onayla ve Mevcut Programın Üzerine Yaz"):
-                        basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
-                        if basarili:
-                            st.success("Yeni program kaydedildi!")
-                        else:
-                            st.error(mesaj)
+                        with st.spinner("Buluta Kaydediliyor..."):
+                            basarili, mesaj = github_a_kaydet(tum_temiz_veriler.to_dict(orient="records"), "mac_programi.json")
+                            if basarili:
+                                st.success("✅ Yeni program başarıyla kaydedildi!")
+                                time.sleep(1)
+                                st.rerun()
+                            else:
+                                st.error(mesaj)
