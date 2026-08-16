@@ -90,7 +90,7 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "SUNJA CELAL AKKAYA",
         "Oyuncu 2": "MERT ALTAN",
-        "Durum": "Oynaniyor",
+        "Durum": "Walkover",
         "Skor": "0/0 0/0",
         "Baslangic_Saati": "11:00",
         "Bitis_Saati": "10:50",
@@ -98,8 +98,8 @@
         "Kura_Tercih": "Karsilama",
         "Saha_Tarafi": "Sandalyenin Solu / Sahanin Solu",
         "sure_islendi": NaN,
-        "Kazanan": NaN,
-        "Son_Hakem": NaN
+        "Kazanan": "SUNJA CELAL AKKAYA",
+        "Son_Hakem": "CANAN ÇAPLIK"
     },
     {
         "Kort": "Kort 2",
