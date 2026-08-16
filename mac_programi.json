@@ -56,16 +56,16 @@
         "Kategori": "Erkek 10 Yaş T",
         "Oyuncu 1": "ALİ MİRAN GÜR",
         "Oyuncu 2": "BARKIN AYBARS KAMAN",
-        "Durum": "Baslamadi",
+        "Durum": "Oynaniyor",
         "Skor": NaN,
-        "Baslangic_Saati": NaN,
-        "Bitis_Saati": NaN,
-        "Kura_Kazanan": NaN,
-        "Kura_Tercih": NaN,
-        "Saha_Tarafi": NaN,
+        "Baslangic_Saati": "12:25",
+        "Bitis_Saati": "",
+        "Kura_Kazanan": "BARKIN AYBARS KAMAN",
+        "Kura_Tercih": "Servis",
+        "Saha_Tarafi": "Sandalyenin Sağı",
         "sure_islendi": NaN,
         "Kazanan": NaN,
-        "Son_Hakem": NaN
+        "Son_Hakem": "FURKAN GÖK"
     },
     {
         "Kort": "Kort 2",
