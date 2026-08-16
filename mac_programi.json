@@ -197,7 +197,7 @@
         "Kategori": "Kadın 8 Yaş T",
         "Oyuncu 1": "LAL KOCA",
         "Oyuncu 2": "BILGE TÜRKMEN",
-        "Durum": "Oynaniyor",
+        "Durum": "Yarım Kaldı",
         "Skor": "6/3 3/2",
         "Baslangic_Saati": "11 :00",
         "Bitis_Saati": "12:15",
@@ -205,7 +205,7 @@
         "Kura_Tercih": "Karsilama",
         "Saha_Tarafi": "Sandalyenin Sagi / Sahanin Sagi",
         "sure_islendi": false,
-        "Kazanan": NaN
+        "Kazanan": "BILGE TÜRKMEN"
     },
     {
         "Kort": "Kort 4",
