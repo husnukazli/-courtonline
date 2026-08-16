@@ -51,16 +51,19 @@ def github_a_kaydet(veri, dosya_yolu):
     except Exception as e:
         return False, str(e)
 
-def pdf_programi_oku_guclu(pdf_file):
+def pdf_programi_oku(pdf_file):
     tum_maclar = []
+    ham_metin_log = []
     try:
         with pdfplumber.open(pdf_file) as pdf:
-            for sayfa in pdf.pages:
+            for sayfa_idx, sayfa in enumerate(pdf.pages):
                 words = sayfa.extract_words()
-                if not words: 
+                if not words:
                     continue
 
-                # Kelimeleri dikey hizaya (satırlara) göre grupla
+                ham_metin_log.append(f"--- Sayfa {sayfa_idx + 1} ({len(words)} kelime bulundu) ---")
+
+                # Kelimeleri satırlara grupla
                 words.sort(key=lambda w: w['top'])
                 rows = []
                 current_row = []
@@ -76,6 +79,7 @@ def pdf_programi_oku_guclu(pdf_file):
                 if current_row:
                     rows.append(current_row)
 
+                # Kort başlık satırını bul
                 court_keywords = ["KORT", "KAPALI", "AÇIK", "TOPRAK", "SERT", "MERKEZ", "COURT"]
                 header_row_idx = -1
                 
@@ -91,7 +95,7 @@ def pdf_programi_oku_guclu(pdf_file):
                 header_row = rows[header_row_idx]
                 header_row.sort(key=lambda w: w['x0'])
 
-                # Sütun başlıklarını geniş aralık eşiği (35px) ile grupla
+                # Sütunları grupla
                 columns = []
                 curr_col_name = header_row[0]['text']
                 curr_x0 = header_row[0]['x0']
@@ -108,7 +112,7 @@ def pdf_programi_oku_guclu(pdf_file):
                         curr_x1 = w['x1']
                 columns.append({"name": curr_col_name.strip(), "x0": curr_x0, "x1": curr_x1})
 
-                # Sütun sınırlarını belirle
+                # Sütun sınırları
                 for i in range(len(columns)):
                     min_x = 0 if i == 0 else (columns[i-1]['x1'] + columns[i]['x0']) / 2
                     max_x = 9999 if i == len(columns) - 1 else (columns[i]['x1'] + columns[i+1]['x0']) / 2
@@ -118,7 +122,7 @@ def pdf_programi_oku_guclu(pdf_file):
                 header_bottom = max([w['bottom'] for w in header_row])
                 data_words = [w for w in words if w['top'] >= header_bottom - 2]
 
-                # Her kort sütununun altındaki maçları parse et
+                # Sütun bazında maçları çıkar
                 for col in columns:
                     c_words = [w for w in data_words if col['min_x'] <= ((w['x0'] + w['x1']) / 2) < col['max_x']]
                     if not c_words:
@@ -130,7 +134,8 @@ def pdf_programi_oku_guclu(pdf_file):
                     curr_top = c_words[0]['top']
 
                     for w in c_words:
-                        if abs(w['top'] - current_top) < 6:
+                        # HATA DÜZELTİLDİ: curr_top kontrolü ve güncellemesi
+                        if abs(w['top'] - curr_top) < 6:
                             curr_line.append(w)
                         else:
                             curr_line.sort(key=lambda x: x['x0'])
@@ -141,7 +146,7 @@ def pdf_programi_oku_guclu(pdf_file):
                         curr_line.sort(key=lambda x: x['x0'])
                         c_lines.append(" ".join([x['text'] for x in curr_line]))
 
-                    # Saat satırlarına göre maç bloklarına böl
+                    # Blok ayrıştırma
                     match_blocks = []
                     curr_block = []
                     for line in c_lines:
@@ -159,7 +164,7 @@ def pdf_programi_oku_guclu(pdf_file):
                         saat_match = re.search(r'\b\d{1,2}:\d{2}\b', block[0])
                         saat = saat_match.group() if saat_match else block[0].split()[0]
 
-                        # Kulüp isimlerini (parantezli satırları) temizle
+                        # Parantezli kulüp satırlarını ele
                         details = [l.strip() for l in block[1:] if not l.strip().startswith('(') and not l.strip().endswith(')') and l.strip()]
                         if not details:
                             continue
@@ -195,12 +200,12 @@ def pdf_programi_oku_guclu(pdf_file):
                             })
 
         if not tum_maclar:
-            return None, "PDF okundu ancak eşleşen maç bulunamadı."
-        return pd.DataFrame(tum_maclar), "Başarılı"
+            return None, "PDF okundu fakat maçlar tablosuna dönüştürülemedi.", "\n".join(ham_metin_log)
+        return pd.DataFrame(tum_maclar), "Başarılı", "\n".join(ham_metin_log)
     except Exception as e:
-        return None, f"PDF Okuma Hatası: {e}"
+        return None, f"PDF Okuma Hatası: {e}", "\n".join(ham_metin_log)
 
-# --- STREAMLIT ARAYÜZÜ ---
+# --- ARAYÜZ ---
 FORMAT_SECENEKLERI = [
     "Normal (6) + 10 Puanlık Maç Tie-Break", 
     "Normal (6) + 3. Set Tam Oynanır", 
@@ -212,8 +217,8 @@ FORMAT_SECENEKLERI = [
 yuklenen_pdf = st.file_uploader("TTF Maç Programı PDF Dosyasını Yükleyin", type=["pdf"])
 
 if yuklenen_pdf is not None:
-    with st.spinner("Maç programı ayrıştırılıyor..."):
-        df, mesaj = pdf_programi_oku_guclu(yuklenen_pdf)
+    with st.spinner("Maç programı taranıyor..."):
+        df, mesaj, loglar = pdf_programi_oku(yuklenen_pdf)
     
     if df is not None:
         st.success(f"Program başarıyla okundu! Toplam {len(df)} maç listelendi.")
@@ -268,3 +273,5 @@ if yuklenen_pdf is not None:
                 if not basarili_hafiza: st.error(f"Hata: {msg_hafiza}")
     else:
         st.error(mesaj)
+        with st.expander("🔍 PDF Okuma Tanılama Bilgisi"):
+            st.text(loglar)
