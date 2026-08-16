@@ -6,11 +6,9 @@ import base64
 import json
 import re
 
-# --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="PDF Program Yükleme", layout="wide")
 st.title("📂 PDF Maç Programı Yükleme ve Format Ayarları")
 
-# --- YARDIMCI FONKSİYONLAR ---
 def githubdan_veri_getir(dosya_yolu):
     try:
         token = st.secrets["GITHUB_TOKEN"]
@@ -54,26 +52,20 @@ def github_a_kaydet(veri, dosya_yolu):
         return False, str(e)
 
 def pdf_programi_oku_koordinat(pdf_file):
-    """
-    TTF Maç programı PDF'ini metinlerin (X,Y) koordinatlarına göre okuyan 
-    ve çizgi/tablo yapısına ihtiyaç duymayan gelişmiş motor.
-    """
     tum_maclar = []
-    
     try:
         with pdfplumber.open(pdf_file) as pdf:
             for sayfa_no, sayfa in enumerate(pdf.pages):
                 words = sayfa.extract_words()
                 if not words: continue
 
-                # 1. Y Koordinatlarına Göre Satırları Bul
                 rows = []
                 words.sort(key=lambda w: w['top'])
                 current_row = []
                 current_top = words[0]['top']
 
                 for w in words:
-                    if abs(w['top'] - current_top) < 4: # 4 pt hassasiyet
+                    if abs(w['top'] - current_top) < 4:
                         current_row.append(w)
                     else:
                         rows.append(current_row)
@@ -82,7 +74,6 @@ def pdf_programi_oku_koordinat(pdf_file):
                 if current_row:
                     rows.append(current_row)
 
-                # 2. Kort Başlık Satırını Bul
                 court_keywords = ["TOPRAK", "SERT", "KORT", "MERKEZ", "KAPALI", "COURT", "AÇIK", "ACIK"]
                 header_row_idx = -1
                 
@@ -93,20 +84,18 @@ def pdf_programi_oku_koordinat(pdf_file):
                             header_row_idx = i
                             break
 
-                if header_row_idx == -1:
-                    continue # Bu sayfada kort programı yok
+                if header_row_idx == -1: continue
 
                 header_row = rows[header_row_idx]
                 header_row.sort(key=lambda w: w['x0'])
 
-                # 3. Sütunların X koordinat sınırlarını belirle
                 columns = []
                 current_col_text = header_row[0]['text']
                 current_col_x0 = header_row[0]['x0']
                 current_col_x1 = header_row[0]['x1']
 
                 for w in header_row[1:]:
-                    if w['x0'] - current_col_x1 < 15: # Aynı başlığın kelimelerini birleştir
+                    if w['x0'] - current_col_x1 < 15:
                         current_col_text += " " + w['text']
                         current_col_x1 = w['x1']
                     else:
@@ -116,14 +105,12 @@ def pdf_programi_oku_koordinat(pdf_file):
                         current_col_x1 = w['x1']
                 columns.append({"name": current_col_text, "x0": current_col_x0, "x1": current_col_x1})
 
-                # Her sütunun etki alanını (sağındaki sınırını) belirle
                 for i in range(len(columns)):
                     if i < len(columns) - 1:
                         columns[i]['limit_x'] = (columns[i]['x1'] + columns[i+1]['x0']) / 2
                     else:
                         columns[i]['limit_x'] = 9999
 
-                # 4. Verileri Sütunlara Dağıt
                 data_words = []
                 for row in rows[header_row_idx+1:]:
                     data_words.extend(row)
@@ -141,13 +128,11 @@ def pdf_programi_oku_koordinat(pdf_file):
                     if not assigned and columns:
                         col_data[columns[-1]['name']].append(w)
 
-                # 5. Her Sütunun İçindeki Maçları Ayrıştır
                 for col in columns:
                     c_name = col['name']
                     c_words = col_data[c_name]
                     if not c_words: continue
 
-                    # Sütun içi kelimeleri satırlara birleştir
                     c_words.sort(key=lambda w: w['top'])
                     c_lines = []
                     curr_line = []
@@ -165,12 +150,10 @@ def pdf_programi_oku_koordinat(pdf_file):
                         curr_line.sort(key=lambda x: x['x0'])
                         c_lines.append(" ".join([x['text'] for x in curr_line]))
 
-                    # Saatlere göre maçları parçalara böl
                     match_blocks = []
                     current_match = []
 
                     for line in c_lines:
-                        # 09:00 gibi saat formatını veya "Takip" kelimesini yakala
                         if re.search(r'\d{2}:\d{2}', line) or "TAKİP" in line.upper():
                             if current_match:
                                 match_blocks.append(current_match)
@@ -182,7 +165,6 @@ def pdf_programi_oku_koordinat(pdf_file):
                     if current_match:
                         match_blocks.append(current_match)
 
-                    # 6. Parçalanan maç detaylarını temizle ve kaydet
                     for block in match_blocks:
                         if not block: continue
 
@@ -191,7 +173,6 @@ def pdf_programi_oku_koordinat(pdf_file):
                         saat = saat_match.group() if saat_match else saat_line.split()[0] if saat_line else ""
 
                         details = block[1:]
-                        # Kulüp isimlerini (örneğin (FERDI) ) atlıyoruz
                         details = [d for d in details if not d.strip().startswith('(') and d.strip()]
 
                         if not details: continue
@@ -209,7 +190,6 @@ def pdf_programi_oku_koordinat(pdf_file):
                         if kat_index != -1:
                             p1_kismi = details[:kat_index]
                             p2_kismi = details[kat_index+1:]
-
                             oyuncu1 = " ".join(p1_kismi) if p1_kismi else "Bilinmiyor 1"
                             oyuncu2 = " ".join(p2_kismi) if p2_kismi else "Bilinmiyor 2"
                         else:
@@ -232,14 +212,11 @@ def pdf_programi_oku_koordinat(pdf_file):
 
         if not tum_maclar:
             return None, "Hata: PDF'te maç okunamadı."
-            
         df = pd.DataFrame(tum_maclar)
         return df, "Başarılı"
-        
     except Exception as e:
         return None, f"PDF Okuma Hatası: {e}"
 
-# --- SİSTEM DEĞİŞKENLERİ ---
 FORMAT_SECENEKLERI = [
     "Normal (6) + 10 Puanlık Maç Tie-Break", 
     "Normal (6) + 3. Set Tam Oynanır", 
@@ -248,7 +225,6 @@ FORMAT_SECENEKLERI = [
     "3 Kısa Set (4)"
 ]
 
-# --- PDF YÜKLEME ALANI ---
 yuklenen_pdf = st.file_uploader("TTF Maç Programı PDF Dosyasını Yükleyin", type=["pdf"])
 
 if yuklenen_pdf is not None:
@@ -257,7 +233,6 @@ if yuklenen_pdf is not None:
     
     if df is not None:
         st.success(f"PDF başarıyla okundu! Toplam {len(df)} maç tespit edildi.")
-        
         bulunan_kortlar = df['Kort'].unique().tolist()
         st.info(f"📍 **Tespit Edilen Kortlar ({len(bulunan_kortlar)}):** {', '.join(bulunan_kortlar)}")
         
@@ -266,11 +241,9 @@ if yuklenen_pdf is not None:
         
         st.divider()
         st.subheader("⚙️ Kategori ve Format Eşleştirme")
-        st.info("Kategorileri sistemdeki skor formatlarıyla eşleştirin. Sistem yaptığınız seçimleri hafızaya alacak ve yarınki PDF'te otomatik getirecektir.")
         
         kategori_sutunu = "Kategori"
         benzersiz_kategoriler = df[kategori_sutunu].unique()
-        
         hafiza = githubdan_veri_getir("kategori_format_hafizasi.json") or {}
         yeni_hafiza = {}
         
@@ -282,7 +255,6 @@ if yuklenen_pdf is not None:
             
         for i, kat in enumerate(benzersiz_kategoriler):
             if not kat or kat == "Genel": continue
-            
             c1, c2 = st.columns(2)
             with c1:
                 st.markdown(f"<div style='padding-top: 10px; font-size: 18px;'>🎾 <b>{kat}</b></div>", unsafe_allow_html=True)
@@ -293,12 +265,10 @@ if yuklenen_pdf is not None:
                 yeni_hafiza[kat] = secilen_format
         
         st.divider()
-        st.warning("⚠️ DİKKAT: 'Programı Onayla ve Kaydet' butonuna bastığınızda, sahadaki mevcut maç programı SIFIRLANACAK ve yerine bu PDF'teki maçlar yüklenecektir. Hakemler ve turnuva istatistikleri korunacaktır.")
         
         if st.button("✅ Programı Onayla ve Kort Hakemlerine Gönder", type="primary", use_container_width=True):
             df["Skor_Formati"] = df[kategori_sutunu].map(yeni_hafiza)
             df["Skor_Formati"] = df["Skor_Formati"].fillna(FORMAT_SECENEKLERI[0])
-            
             df["Durum"] = "Baslamadi"
             df["Skor"] = "-"
             df["Kura_Kazanan"] = "Secilmedi"
@@ -313,11 +283,10 @@ if yuklenen_pdf is not None:
             basarili_hafiza, msg_hafiza = github_a_kaydet(yeni_hafiza, "kategori_format_hafizasi.json")
             
             if basarili_mac and basarili_hafiza:
-                st.success("🎉 Mükemmel! Maç programı, hakemlerin format kurallarıyla birlikte sisteme başarıyla yüklendi!")
+                st.success("🎉 Maç programı başarıyla yüklendi!")
                 st.balloons()
             else:
-                if not basarili_mac: st.error(f"Maç programı kaydedilirken hata: {msg_mac}")
-                if not basarili_hafiza: st.error(f"Hafıza kaydedilirken hata: {msg_hafiza}")
-                
+                if not basarili_mac: st.error(f"Hata: {msg_mac}")
+                if not basarili_hafiza: st.error(f"Hata: {msg_hafiza}")
     else:
         st.error(mesaj)
