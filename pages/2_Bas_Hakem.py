@@ -397,8 +397,9 @@ else:
             if isinstance(istatistikler, dict) and "sureler" in istatistikler:
                 sureler.extend(istatistikler["sureler"])
             
+            # Sadece normal "Bitti" statüsündeki maç süreleri istatistiğe dahil edilir (Walkover ve Retired hariç)
             for _, row in df_stat.iterrows():
-                if row.get("Durum") in ["Bitti", "Walkover", "Retired"]:
+                if row.get("Durum") == "Bitti":
                     b_saat = row.get("Baslangic_Saati", "")
                     bit_saat = row.get("Bitis_Saati", "")
                     if b_saat and bit_saat and b_saat != "Secilmedi" and bit_saat != "Secilmedi":
